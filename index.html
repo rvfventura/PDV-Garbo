@@ -78,7 +78,7 @@
             max-width: 500px;
         }
     </style>
-</head>
+</head>   
 <body>
 
 <!-- Espaço para Avisos (Sucesso/Erro) -->
@@ -307,27 +307,34 @@
     }
     
     // No topo do script, certifique-se que esta variável existe
+    // Garanta que essa variável esteja no topo do script
     let descontoGlobal = 0; 
     
     function abrirModalDesconto() {
-        // Armazenamos o valor atual para mostrar como padrão no prompt
-        const valorPadrao = (descontoGlobal * 100).toFixed(0);
-        const entrada = prompt("Digite o desconto em % (0 a 100):", valorPadrao);
+        // Em vez de prompt, mostramos o nosso modal HTML
+        document.getElementById('inputValorDesconto').value = (descontoGlobal * 100).toFixed(0);
+        document.getElementById('modalDesconto').classList.remove('oculto');
+        document.getElementById('inputValorDesconto').focus();
+    }
     
-        // Se o usuário clicar em 'Cancelar', a variável 'entrada' será null.
-        // Verificamos isso para não fazer nada e não disparar o popstate.
-        if (entrada !== null) {
-            const valorNumerico = parseFloat(entrada.replace(',', '.'));
-            
-            if (!isNaN(valorNumerico) && valorNumerico >= 0 && valorNumerico <= 100) {
-                descontoGlobal = valorNumerico / 100;
-                mostrarAviso(`Desconto de ${valorNumerico}% aplicado.`);
-            } else {
-                descontoGlobal = 0;
-                mostrarAviso("Desconto removido ou valor inválido.", "error");
-            }
-            atualizarInterface();
+    function fecharModalDesconto() {
+        document.getElementById('modalDesconto').classList.add('oculto');
+    }
+    
+    function confirmarDesconto() {
+        const entrada = document.getElementById('inputValorDesconto').value;
+        const valorNumerico = parseFloat(entrada.replace(',', '.'));
+    
+        if (!isNaN(valorNumerico) && valorNumerico >= 0 && valorNumerico <= 100) {
+            descontoGlobal = valorNumerico / 100;
+            mostrarAviso(`Desconto de ${valorNumerico}% aplicado.`);
+        } else {
+            descontoGlobal = 0;
+            mostrarAviso("Desconto removido.", "error");
         }
+        
+        atualizarInterface();
+        fecharModalDesconto();
     }
         
     function adicionarAoCarrinho(produto) {
@@ -381,27 +388,27 @@
     }
     
     async function enviarVenda() {
-    if (carrinho.length === 0) return mostrarAviso("O carrinho está vazio!", 'error');
-
-    const metodo = document.getElementById('metodoPgto').value;
-    const campoParc = document.getElementById('parcelas');
+        if (carrinho.length === 0) return mostrarAviso("O carrinho está vazio!", 'error');
     
-    // Define se é à vista ou parcelado
-    let textoParcelas = (metodo === 'Cartão Crédito' && campoParc) ? (campoParc.value + "x") : "à vista";
-
-    const payload = {
-        acao: 'finalizarVenda',
-        dados: {
-            venda: {
-                pagamento: metodo,
-                desconto: (descontoGlobal * 100).toFixed(2) + "%", // Envia formatado como string
-                parcelas: textoParcelas,
-                vendedor: vendedorLogado
-            },
-            itens: carrinho
-        }
-    };
-    exibirLoader(true, "Finalizando Venda...");
+        const metodo = document.getElementById('metodoPgto').value;
+        const campoParc = document.getElementById('parcelas');
+        
+        // Define se é à vista ou parcelado
+        let textoParcelas = (metodo === 'Cartão Crédito' && campoParc) ? (campoParc.value + "x") : "à vista";
+    
+        const payload = {
+            acao: 'finalizarVenda',
+            dados: {
+                venda: {
+                    pagamento: metodo,
+                    desconto: (descontoGlobal * 100).toFixed(2) + "%", // Envia formatado como string
+                    parcelas: textoParcelas,
+                    vendedor: vendedorLogado
+                },
+                itens: carrinho
+            }
+        };
+        exibirLoader(true, "Finalizando Venda...");
         try {
             const response = await fetch(URL_API, {
                 method: 'POST',
@@ -515,6 +522,31 @@
     
     window.onload = () => { console.log("Sistema pronto."); };
 </script>
+
+<!-- Modal de Desconto Personalizado -->
+<div id="modalDesconto" class="modal-overlay oculto">
+    <div class="modal-content shadow-lg">
+        <h5 class="fw-bold mb-3">Aplicar Desconto (%)</h5>
+        <input type="number" id="inputValorDesconto" class="form-control form-control-lg mb-3" placeholder="Ex: 10" inputmode="decimal">
+        <div class="d-flex gap-2">
+            <button class="btn btn-secondary w-100" onclick="fecharModalDesconto()">Cancelar</button>
+            <button class="btn btn-primary w-100" onclick="confirmarDesconto()">Aplicar</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5); z-index: 2000;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .modal-content {
+        background: white; padding: 20px; border-radius: 15px;
+        width: 90%; max-width: 320px; text-align: center;
+    }
+    .oculto { display: none !important; }
+</style>    
 
 </body>
 </html>
