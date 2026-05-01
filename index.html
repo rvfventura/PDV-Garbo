@@ -181,21 +181,15 @@
     let timestampUltimaLeitura = 0;
     let vendedorLogado = "";
 
-    // NOVA FUNÇÃO: Substitui o 'alert' por um aviso visual no topo
     function mostrarAviso(mensagem, tipo = 'success') {
         const container = document.getElementById('containerAvisos');
         const cor = tipo === 'success' ? 'success' : 'danger';
-        
         container.innerHTML = `
-            <div class="alert alert-${cor} shadow-lg text-center fw-bold animate__animated animate__fadeInDown" role="alert">
+            <div class="alert alert-${cor} shadow-lg text-center fw-bold" role="alert">
                 ${mensagem}
             </div>
         `;
-
-        // Remove o aviso automaticamente após 5 segundos
-        setTimeout(() => {
-            container.innerHTML = '';
-        }, 5000);
+        setTimeout(() => { container.innerHTML = ''; }, 5000);
     }
 
     function playBeep() {
@@ -213,28 +207,35 @@
         } catch (e) { console.log("Áudio bloqueado."); }
     }
 
-    // Função para deslogar o vendedor e resetar a tela
+    // CORREÇÃO CIRÚRGICA: Função de saída unificada
     function sairDoSistema() {
-        // Desativa o monitoramento do botão voltar para evitar conflitos
-        window.onpopstate = null;
-    
-        // Reseta as variáveis e interface
         vendedorLogado = "";
         document.getElementById('vendedorAtivo').value = "";
         carrinho = [];
         atualizarInterface();
-    
-        // Sai da tela cheia
-        if (document.fullscreenElement) {
-            document.exitFullscreen().catch(err => console.log(err));
+
+        // Para o scanner se estiver rodando
+        if (scanner) {
+            scanner.stop().catch(err => console.log("Erro ao parar scanner:", err));
         }
-    
-        // Volta para a tela de login
+
+        // Sai da tela cheia se ainda estiver nela
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch(err => console.log(err));
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
+        }
+
+        // Troca visual das telas
         document.getElementById('conteudoPrincipal').classList.add('oculto');
         document.getElementById('telaAcesso').classList.remove('oculto');
+        
+        // Remove o evento para não entrar em loop ao clicar em voltar na tela de login
+        window.onpopstate = null;
     }
-    
-    // Atualize sua função de carregar estoque para incluir o aviso de sucesso
+
     async function carregarEstoqueInicial() {
         exibirLoader(true, "Sincronizando estoque...");
         try {
@@ -243,29 +244,17 @@
                 body: JSON.stringify({ acao: 'carregarEstoque' })
             });
             const res = await response.json();
-            
             if (res.sucesso) {
-                // Filtra os itens válidos vindos do código.gs
                 estoqueLocal = res.lista.filter(item => item.codigo && item.codigo.trim() !== "");
-                
-                const totalPecas = estoqueLocal.reduce((acc, item) => {
-                    return acc + (Number(item.quantidade) || 0);
-                }, 0);
-    
-                document.getElementById('statusCache').innerText = 
-                    `Estoque local: ${totalPecas} peças em ${estoqueLocal.length} modelos.`;
-                
-                // Feedback visual para o vendedor
-                mostrarAviso("Estoque atualizado com sucesso!");
+                const totalPecas = estoqueLocal.reduce((acc, item) => acc + (Number(item.quantidade) || 0), 0);
+                document.getElementById('statusCache').innerText = `Estoque local: ${totalPecas} peças.`;
+                mostrarAviso("Estoque atualizado!");
             }
         } catch (e) { 
-            console.error("Erro cache:", e); 
             mostrarAviso("Erro ao conectar com a planilha.", "error");
-        } finally {
-            exibirLoader(false);
-        }
+        } finally { exibirLoader(false); }
     }
-    
+
     function iniciarScanner() {
         scanner = new Html5Qrcode("reader");
         const config = { fps: 15, qrbox: { width: 250, height: 250 } };
@@ -297,262 +286,151 @@
                 });
                 const res = await response.json();
                 if (res.sucesso) { adicionarAoCarrinho(res); } 
-                else { mostrarAviso("Produto não encontrado: " + codigo, 'error'); }
-            } catch (e) { mostrarAviso("Erro de conexão ao buscar produto.", 'error'); }
+                else { mostrarAviso("Não encontrado: " + codigo, 'error'); }
+            } catch (e) { mostrarAviso("Erro de conexão.", 'error'); }
             finally { exibirLoader(false); }
         }
-    }
-
-    function ajustarCamposPagamento() {
-        const metodo = document.getElementById('metodoPgto').value;
-        const container = document.getElementById('containerDinamico');
-        
-        if (metodo === 'Pix' || metodo === 'Dinheiro') {
-            container.innerHTML = `
-                <label class="small fw-bold">Desconto %</label>
-                <div class="input-group input-group-sm">
-                    <select id="desconto" class="form-select" onchange="verificarDescontoPersonalizado()">
-                        <option value="0">0%</option>
-                        <option value="0.02">2%</option>
-                        <option value="0.05">5%</option>
-                        <option value="outro">Outro</option>
-                    </select>
-                    <input type="number" id="descontoManual" class="form-control oculto" 
-                           placeholder="10" oninput="atualizarInterface()" style="max-width: 60px;">
-                </div>`;
-        } else if (metodo === 'Cartão Crédito') {
-            container.innerHTML = `
-                <label class="small fw-bold">Parcelas</label>
-                <select id="parcelas" class="form-select form-select-sm">
-                    <option value="1">1x</option>
-                    <option value="2">2x</option>
-                    <option value="3">3x</option>
-                    <option value="4">4x</option>
-                    <option value="5">5x</option>
-                </select>`;
-        } else {
-            container.innerHTML = ''; 
-        }
-        atualizarInterface();
-    }
-    
-    function verificarDescontoPersonalizado() {
-        const select = document.getElementById('desconto');
-        const inputManual = document.getElementById('descontoManual');
-        if (select.value === 'outro') {
-            inputManual.classList.remove('oculto');
-        } else {
-            inputManual.classList.add('oculto');
-            inputManual.value = '';
-        }
-        atualizarInterface();
     }
 
     function adicionarAoCarrinho(produto) {
         playBeep();
         const itemExistente = carrinho.find(item => item.codigo === produto.codigo);
-        if (itemExistente) {
-            itemExistente.quantidade += 1;
-        } else {
-            carrinho.push({ ...produto, grandmother: 1, quantidade: 1 });
-        }
+        if (itemExistente) { itemExistente.quantidade += 1; } 
+        else { carrinho.push({ ...produto, quantidade: 1 }); }
+        
         const readerDiv = document.getElementById('reader');
         readerDiv.style.border = "5px solid #28a745";
         setTimeout(() => readerDiv.style.border = "5px solid transparent", 400);
+        
         atualizarInterface();
         document.getElementById('manualInput').value = "";
     }
 
     function atualizarInterface() {
         const lista = document.getElementById('listaCarrinho');
-        let totalBruto = 0;
-        let totalPecas = 0;
+        let totalBruto = 0, totalPecas = 0;
         lista.innerHTML = "";
-    
         carrinho.forEach((item, idx) => {
             const subtotal = item.preco * item.quantidade;
             totalBruto += subtotal;
             totalPecas += item.quantidade;
-            const tamanhoTexto = item.tamanho ? `<span class="item-tamanho"> | ${item.tamanho}</span>` : "";
-            
             lista.innerHTML += `
                 <div class="card item-card shadow-sm">
                     <div class="d-flex align-items-center justify-content-between">
-                        <div class="item-nome" style="flex: 1.5;">
-                            <strong>${item.nomeCombinado || item.nome}</strong>${tamanhoTexto}
-                        </div>
-                        <div class="text-center" style="flex: 0.5; font-size: 0.85rem;">
-                            <span class="badge bg-primary">${item.quantidade}x</span>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-end" style="flex: 1.5; min-width: 105px;">
-                            <strong class="me-2" style="font-size: 0.9rem;">R$ ${subtotal.toFixed(2)}</strong>
-                            <button class="btn btn-sm btn-outline-danger border-0 p-0 px-2" onclick="removerUm(${idx})">✕</button>
+                        <div class="item-nome" style="flex: 1.5;"><strong>${item.nomeCombinado || item.nome}</strong></div>
+                        <div class="text-center" style="flex: 0.5;"><span class="badge bg-primary">${item.quantidade}x</span></div>
+                        <div class="d-flex align-items-center justify-content-end" style="flex: 1.5;">
+                            <strong class="me-2">R$ ${subtotal.toFixed(2)}</strong>
+                            <button class="btn btn-sm text-danger" onclick="removerUm(${idx})">✕</button>
                         </div>
                     </div>
                 </div>`;
         });
-    
         document.getElementById('qtdItens').innerText = totalPecas;
-    
         const selectDesc = document.getElementById('desconto');
         const inputManual = document.getElementById('descontoManual');
-        let percDesconto = 0;
-    
-        if (selectDesc && selectDesc.value === 'outro') {
-            const valorDigitado = parseFloat(inputManual.value) || 0;
-            percDesconto = valorDigitado / 100;
-        } else if (selectDesc) {
-            percDesconto = parseFloat(selectDesc.value);
-        }
-    
-        const valorComDesconto = totalBruto * (1 - percDesconto);
-        document.getElementById('totalExibicao').innerText = `R$ ${valorComDesconto.toFixed(2)}`;
+        let percDesconto = (selectDesc && selectDesc.value === 'outro') ? (parseFloat(inputManual.value) || 0) / 100 : (parseFloat(selectDesc?.value) || 0);
+        document.getElementById('totalExibicao').innerText = `R$ ${(totalBruto * (1 - percDesconto)).toFixed(2)}`;
     }
 
-    async function enviarVenda() {
-        if (carrinho.length === 0) {
-            mostrarAviso("O carrinho está vazio!", 'error');
-            return;
-        }
-        
+    function ajustarCamposPagamento() {
         const metodo = document.getElementById('metodoPgto').value;
-        const campoParc = document.getElementById('parcelas');
-        const selectDesc = document.getElementById('desconto');
-        const inputManual = document.getElementById('descontoManual');
-        let valorDesconto = 0;
-        
-        if (selectDesc && selectDesc.value === 'outro') {
-            valorDesconto = (parseFloat(inputManual.value) || 0) / 100;
-        } else if (selectDesc) {
-            valorDesconto = parseFloat(selectDesc.value);
-        }
-        let textoParcelas = (metodo === 'Cartão Crédito' && campoParc) ? (campoParc.value + "x") : "à vista";
-    
-        const payload = {
-            acao: 'finalizarVenda',
-            dados: {
-                venda: {
-                    pagamento: metodo,
-                    desconto: valorDesconto,
-                    parcelas: textoParcelas,
-                    vendedor: vendedorLogado 
-                },
-                itens: carrinho
-            }
-        };
-    
-        exibirLoader(true, "Finalizando Venda...");
-        try {
-            const response = await fetch(URL_API, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            });
-            const res = await response.json();
-            if (res.sucesso) {
-                mostrarAviso("VENDA CONCLUÍDA COM SUCESSO!", 'success');
-                limparCarrinho(); 
-                await carregarEstoqueInicial();
-            } else { 
-                mostrarAviso("Erro na planilha: " + res.erro, 'error'); 
-            }
-        } catch (e) { 
-            mostrarAviso("Erro de conexão com o servidor.", 'error'); 
-        } finally { 
-            exibirLoader(false); 
-        }
-    }
-
-    function removerUm(idx) {
-        if (carrinho[idx].quantidade > 1) { carrinho[idx].quantidade -= 1; } 
-        else { carrinho.splice(idx, 1); }
+        const container = document.getElementById('containerDinamico');
+        if (metodo === 'Pix' || metodo === 'Dinheiro') {
+            container.innerHTML = `<label class="small fw-bold">Desconto %</label>
+                <div class="input-group input-group-sm">
+                    <select id="desconto" class="form-select" onchange="verificarDescontoPersonalizado()">
+                        <option value="0">0%</option><option value="0.02">2%</option><option value="0.05">5%</option><option value="outro">Outro</option>
+                    </select>
+                    <input type="number" id="descontoManual" class="form-control oculto" oninput="atualizarInterface()" style="max-width: 60px;">
+                </div>`;
+        } else if (metodo === 'Cartão Crédito') {
+            container.innerHTML = `<label class="small fw-bold">Parcelas</label>
+                <select id="parcelas" class="form-select form-select-sm">
+                    <option value="1">1x</option><option value="2">2x</option><option value="3">3x</option>
+                </select>`;
+        } else { container.innerHTML = ''; }
         atualizarInterface();
     }
 
-    function limparCarrinho() { 
-        carrinho = []; 
-        document.getElementById('metodoPgto').value = "Pix";
-        ajustarCamposPagamento();
-        atualizarInterface(); 
-        document.getElementById('manualInput').focus();
+    function verificarDescontoPersonalizado() {
+        const select = document.getElementById('desconto');
+        document.getElementById('descontoManual').classList.toggle('oculto', select.value !== 'outro');
+        atualizarInterface();
     }
-    
-    function exibirLoader(show, texto = "") { 
-        document.getElementById('loader').style.display = show ? 'flex' : 'none'; 
+
+    async function enviarVenda() {
+        if (carrinho.length === 0) return mostrarAviso("Carrinho vazio!", 'error');
+        exibirLoader(true, "Enviando...");
+        try {
+            const response = await fetch(URL_API, {
+                method: 'POST',
+                body: JSON.stringify({ acao: 'finalizarVenda', dados: { venda: { vendedor: vendedorLogado }, itens: carrinho } })
+            });
+            const res = await response.json();
+            if (res.sucesso) {
+                mostrarAviso("SUCESSO!", 'success');
+                limparCarrinho();
+                await carregarEstoqueInicial();
+            }
+        } catch (e) { mostrarAviso("Erro conexão", 'error'); }
+        finally { exibirLoader(false); }
+    }
+
+    function removerUm(idx) {
+        if (carrinho[idx].quantidade > 1) carrinho[idx].quantidade--;
+        else carrinho.splice(idx, 1);
+        atualizarInterface();
+    }
+
+    function limparCarrinho() {
+        carrinho = [];
+        atualizarInterface();
+    }
+
+    function exibirLoader(show, texto = "") {
+        document.getElementById('loader').style.display = show ? 'flex' : 'none';
         if(texto) document.getElementById('loaderText').innerText = texto;
     }
 
     async function iniciarSistema() {
-        const inputVendedor = document.getElementById('vendedorAtivo');
-        const nomeInformado = inputVendedor.value.trim();
-    
-        // 1. VALIDAÇÃO PRIMÁRIA: Se estiver vazio, avisa e interrompe
-        if (!nomeInformado) {
-            mostrarAviso("Por favor, informe seu nome para acessar o PDV.", 'error');
-            inputVendedor.focus();
-            return; // O 'return' impede que o sistema tente entrar ou peça tela cheia
-        }
+        const nome = document.getElementById('vendedorAtivo').value.trim();
+        if (!nome) return mostrarAviso("Informe seu nome", 'error');
         
-        // 2. Se chegou aqui, o nome é válido
-        vendedorLogado = nomeInformado;
-    
-        // 3. Tenta ativar a Tela Cheia
+        vendedorLogado = nome;
+        
+        // Ativa Fullscreen
         const docElm = document.documentElement;
         try {
-            if (docElm.requestFullscreen) {
-                await docElm.requestFullscreen();
-            }
-        } catch (err) {
-            console.log("Acesso à tela cheia negado ou indisponível.");
-        }
-    
-        // 4. Troca de telas
+            if (docElm.requestFullscreen) await docElm.requestFullscreen();
+            else if (docElm.webkitRequestFullscreen) await docElm.webkitRequestFullscreen();
+        } catch (err) { console.log("Fullscreen negado"); }
+
         document.getElementById('telaAcesso').classList.add('oculto');
         document.getElementById('conteudoPrincipal').classList.remove('oculto');
-        // Ativa o monitoramento do botão voltar
-        gerenciarNavegaçãoAndroid();
         
-        // 5. Sincronização Inicial
-        exibirLoader(true, "Iniciando sistema...");
-        try {
-            // Agora o carregarEstoqueInicial já tem seu próprio mostrarAviso interno
-            await carregarEstoqueInicial(); 
-            iniciarScanner(); 
-            ajustarCamposPagamento(); 
-        } catch (e) {
-            mostrarAviso("Erro ao carregar dados iniciais.", 'error');
-        } finally {
-            exibirLoader(false);
-            setTimeout(() => document.getElementById('manualInput').focus(), 500);
-        }
+        // GERENCIAMENTO DE HISTÓRICO CORRIGIDO
+        history.pushState({ page: 'pdv' }, null, ""); 
+        window.onpopstate = function (event) {
+            // Se o usuário clicar em voltar, forçamos a saída total
+            sairDoSistema();
+        };
+
+        await carregarEstoqueInicial();
+        iniciarScanner();
+        ajustarCamposPagamento();
+        setTimeout(() => document.getElementById('manualInput').focus(), 500);
     }
-    
+
+    // Eventos de Teclado Manual
     document.getElementById('manualInput').addEventListener('click', function() {
         this.removeAttribute('inputmode');
         this.focus();
     });
-    
     document.getElementById('manualInput').addEventListener('blur', function() {
         this.setAttribute('inputmode', 'none');
     });
 
-    // Adiciona um estado no histórico para capturar o "Voltar"
-    function gerenciarNavegaçãoAndroid() {
-        // Empurra um estado novo para o histórico
-        history.pushState({ pdvAtivo: true }, null, location.href);
-        
-        window.onpopstate = function (event) {
-            // Se o PDV estava ativo e o usuário tentou voltar
-            if (vendedorLogado !== "") {
-                // Executamos a saída do sistema
-                sairDoSistema();
-                
-                // Opcional: Avisa o usuário por que ele saiu
-                mostrarAviso("Sessão encerrada via navegação do dispositivo.");
-            }
-        };
-    }
-    
-    window.onload = () => { console.log("Sistema pronto."); };
 </script>
 </body>
 </html>
