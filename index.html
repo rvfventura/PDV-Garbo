@@ -11,56 +11,55 @@
         
         #reader { 
             width: 100% !important;
-            max-width: 400px; /* Tamanho ideal para não ficar gigante no tablet */
+            max-width: 400px; 
             border-radius: 8px;
         }
     
-        /* Ajuste de altura para telas médias (Tablets deitados) */
+        /* Força altura igual e centralização no Laptop/Tablet Horizontal */
         @media (min-width: 768px) {
             .row.g-3 {
-                min-height: 80vh; /* Faz a linha ocupar quase a tela toda */
+                min-height: 85vh; 
+                align-items: stretch; /* Faz as colunas terem a mesma altura */
             }
             
             .carrinho-container {
-                /* Ajusta o scroll do carrinho para casar com a altura da câmera ao lado */
-                height: calc(100vh - 400px); 
-                min-height: 250px;
+                flex-grow: 1; /* Faz a lista ocupar o espaço disponível */
+                height: calc(100vh - 380px); 
+                min-height: 200px;
+                overflow-y: auto;
             }
         }
     
-        /* Estilo do painel de pagamento para ficar compacto */
         .painel-pagamento {
             background: #f1f3f5;
-            padding: 15px;
+            padding: 10px; /* Reduzido */
             border-radius: 8px;
             border-top: 2px solid #dee2e6;
+            margin-top: 5px; /* Espaço mínimo */
         }
     
         .item-card { 
-        border-left: 4px solid #0d6efd; 
-        margin-bottom: 4px; /* Espaçamento menor entre itens */
-        padding: 5px 10px !important; /* Diminui o respiro interno */
+            border-left: 4px solid #0d6efd; 
+            margin-bottom: 2px !important; /* Espaço mínimo entre itens */
+            padding: 4px 10px !important; 
         }
     
         .item-nome {
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis; /* Corta o nome se for muito longo para não quebrar a linha */
-            font-size: 0.9rem;
+            text-overflow: ellipsis; 
+            font-size: 0.85rem;
+        }
+
+        .item-tamanho {
+            font-size: 0.75rem;
+            color: #6c757d;
+            font-weight: bold;
         }
     
         .loading-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.8); z-index: 9999; justify-content: center; align-items: center;
-        }
-    
-        /* --- AJUSTE PARA TABLET HORIZONTAL --- */
-        @media (min-width: 768px) {
-            .carrinho-container {
-                /* No tablet deitado, a lista cresce mas deixa espaço para o totalizador */
-                height: calc(100vh - 420px); 
-                min-height: 200px;
-            }
         }
     </style>
 </head>
@@ -71,23 +70,21 @@
     <span class="ms-2" id="loaderText">Sincronizando Dados...</span>
 </div>
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-3">
     <div class="row g-3">
         <!-- Lado Esquerdo: Scanner -->
-        <div class="col-12 col-md-6 d-flex align-items-center">
-            <div class="card shadow-sm border-0 w-100">
-                <div class="card-body text-center">
+        <div class="col-12 col-md-6">
+            <div class="card shadow-sm border-0 h-100 d-flex align-items-center justify-content-center">
+                <div class="card-body text-center w-100 d-flex flex-column justify-content-center">
                     <h5 class="card-title mb-3">Terminal de Leitura</h5>
                     <div id="reader" class="mx-auto"></div>
                     <div class="mt-3">
-                        <div class="input-group">
+                        <div class="input-group input-group-sm mx-auto" style="max-width: 300px;">
                             <input type="text" id="manualInput" class="form-control" placeholder="Código manual">
                             <button class="btn btn-primary" onclick="buscarPorCodigo(document.getElementById('manualInput').value)">Add</button>
                         </div>
                     </div>
-                    <div class="mt-2 small text-muted" id="statusCache">
-                        Estoque local: carregando...
-                    </div>
+                    <div class="mt-2 small text-muted" id="statusCache">Estoque local: carregando...</div>
                 </div>
             </div>
         </div>
@@ -95,13 +92,13 @@
         <!-- Lado Direito: Carrinho -->
         <div class="col-12 col-md-6">
             <div class="card shadow-sm border-0 h-100">
-                <div class="card-body d-flex flex-column">
+                <div class="card-body d-flex flex-column p-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="m-0">Carrinho</h5>
                         <button class="btn btn-sm btn-outline-danger" onclick="limparCarrinho()">Limpar</button>
                     </div>
                     
-                    <div id="listaCarrinho" class="carrinho-container mb-3"></div>
+                    <div id="listaCarrinho" class="carrinho-container"></div>
     
                     <div class="painel-pagamento mt-auto">
                         <div class="row g-2 mb-2">
@@ -114,7 +111,7 @@
                                 </select>
                             </div>
                             <div class="col-6">
-                                <input type="number" id="desconto" class="form-control form-control-sm" placeholder="Desconto R$">
+                                <input type="number" id="desconto" class="form-control form-control-sm" placeholder="Desconto R$" oninput="atualizarInterface()">
                             </div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
@@ -129,12 +126,10 @@
 </div>
 
 <script>
-    // --- CONFIGURAÇÃO ---
     const URL_API = "https://script.google.com/macros/s/AKfycbwRgKmPmxzeqXZeTRUAbIjIWsf-haaFTX4L97WhNnW-UZ6tnJhdtvu6qyXk07rvksjPpw/exec"; 
     let carrinho = [];
     let estoqueLocal = [];
     let scanner;
-    
     let ultimoCodigoLido = "";
     let timestampUltimaLeitura = 0;
 
@@ -143,14 +138,11 @@
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
-
             oscillator.type = "sine";
             oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); 
             gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-            
             oscillator.start();
             oscillator.stop(audioCtx.currentTime + 0.1);
         } catch (e) { console.log("Áudio pendente de interação."); }
@@ -166,19 +158,15 @@
             const res = await response.json();
             if (res.sucesso) {
                 estoqueLocal = res.lista;
-                document.getElementById('statusCache').innerText = `Estoque local: ${estoqueLocal.length} produtos prontos.`;
+                document.getElementById('statusCache').innerText = `Estoque local: ${estoqueLocal.length} produtos.`;
             }
-        } catch (e) {
-            console.error("Erro cache:", e);
-        } finally {
-            exibirLoader(false);
-        }
+        } catch (e) { console.error("Erro cache:", e); }
+        finally { exibirLoader(false); }
     }
 
     function iniciarScanner() {
         scanner = new Html5Qrcode("reader");
         const config = { fps: 15, qrbox: { width: 250, height: 250 } };
-        
         scanner.start({ facingMode: "environment" }, config, (text) => {
             processarLeitura(text);
         }).catch(err => console.error("Erro câmera:", err));
@@ -196,7 +184,6 @@
         if (!codigo) return;
         codigo = codigo.trim();
         const produto = estoqueLocal.find(p => p.codigo === codigo);
-
         if (produto) {
             adicionarAoCarrinho(produto);
         } else {
@@ -207,33 +194,24 @@
                     body: JSON.stringify({ acao: 'buscarProduto', dados: { codigo: codigo } })
                 });
                 const res = await response.json();
-                if (res.sucesso) {
-                    adicionarAoCarrinho(res);
-                } else {
-                    alert("Produto não encontrado: " + codigo);
-                }
-            } catch (e) {
-                alert("Erro de conexão.");
-            } finally {
-                exibirLoader(false);
-            }
+                if (res.sucesso) { adicionarAoCarrinho(res); } 
+                else { alert("Produto não encontrado: " + codigo); }
+            } catch (e) { alert("Erro de conexão."); }
+            finally { exibirLoader(false); }
         }
     }
 
     function adicionarAoCarrinho(produto) {
         playBeep();
         const itemExistente = carrinho.find(item => item.codigo === produto.codigo);
-
         if (itemExistente) {
             itemExistente.quantidade += 1;
         } else {
             carrinho.push({ ...produto, quantidade: 1 });
         }
-
         const readerDiv = document.getElementById('reader');
         readerDiv.style.border = "5px solid #28a745";
         setTimeout(() => readerDiv.style.border = "5px solid transparent", 400);
-
         atualizarInterface();
         document.getElementById('manualInput').value = "";
     }
@@ -246,27 +224,20 @@
         carrinho.forEach((item, idx) => {
             const subtotal = item.preco * item.quantidade;
             totalBruto += subtotal;
+            const tamanhoTexto = item.tamanho ? `<span class="item-tamanho"> | ${item.tamanho}</span>` : "";
             
             lista.innerHTML += `
                 <div class="card item-card shadow-sm">
                     <div class="d-flex align-items-center justify-content-between">
-                        <!-- Nome do Produto -->
                         <div class="item-nome" style="flex: 2;">
-                            <strong>${item.nomeCombinado || item.nome}</strong>
+                            <strong>${item.nomeCombinado || item.nome}</strong>${tamanhoTexto}
                         </div>
-                        
-                        <!-- Quantidade e Preço Unitário -->
                         <div class="text-center" style="flex: 1; font-size: 0.85rem;">
                             <span class="badge bg-primary">${item.quantidade}x</span>
-                            <span class="text-muted">R$ ${item.preco.toFixed(2)}</span>
                         </div>
-    
-                        <!-- Subtotal e Botão -->
                         <div class="d-flex align-items-center justify-content-end" style="flex: 1;">
-                            <strong class="me-2">R$ ${subtotal.toFixed(2)}</strong>
-                            <button class="btn btn-sm btn-outline-danger p-0 px-2" onclick="removerUm(${idx})">
-                                <i class="bi bi-trash">-</i>
-                            </button>
+                            <strong class="me-2" style="font-size: 0.9rem;">R$ ${subtotal.toFixed(2)}</strong>
+                            <button class="btn btn-sm btn-outline-danger border-0 p-0 px-2" onclick="removerUm(${idx})">✕</button>
                         </div>
                     </div>
                 </div>`;
@@ -275,15 +246,14 @@
         const desc = parseFloat(document.getElementById('desconto').value) || 0;
         document.getElementById('totalExibicao').innerText = `R$ ${(totalBruto - desc).toFixed(2)}`;
     }
+
     async function enviarVenda() {
         if (carrinho.length === 0) return alert("Carrinho vazio!");
-        
         const infoVenda = {
             pagamento: document.getElementById('metodoPgto').value,
             desconto: parseFloat(document.getElementById('desconto').value) || 0,
             parcelas: 1
         };
-
         exibirLoader(true, "Finalizando Venda...");
         try {
             const response = await fetch(URL_API, {
@@ -295,22 +265,14 @@
                 alert("Venda registrada!");
                 limparCarrinho();
                 await carregarEstoqueInicial();
-            } else {
-                alert("Erro: " + res.erro);
-            }
-        } catch (e) {
-            alert("Erro de conexão.");
-        } finally {
-            exibirLoader(false);
-        }
+            } else { alert("Erro: " + res.erro); }
+        } catch (e) { alert("Erro de conexão."); }
+        finally { exibirLoader(false); }
     }
 
     function removerUm(idx) {
-        if (carrinho[idx].quantidade > 1) {
-            carrinho[idx].quantidade -= 1;
-        } else {
-            carrinho.splice(idx, 1);
-        }
+        if (carrinho[idx].quantidade > 1) { carrinho[idx].quantidade -= 1; } 
+        else { carrinho.splice(idx, 1); }
         atualizarInterface();
     }
 
@@ -326,6 +288,5 @@
         iniciarScanner();
     };
 </script>
-
 </body>
 </html>
