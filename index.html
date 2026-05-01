@@ -15,15 +15,14 @@
             border-radius: 8px;
         }
     
-        /* Força altura igual e centralização no Laptop/Tablet Horizontal */
         @media (min-width: 768px) {
             .row.g-3 {
                 min-height: 85vh; 
-                align-items: stretch; /* Faz as colunas terem a mesma altura */
+                align-items: stretch; 
             }
             
             .carrinho-container {
-                flex-grow: 1; /* Faz a lista ocupar o espaço disponível */
+                flex-grow: 1; 
                 height: calc(100vh - 380px); 
                 min-height: 200px;
                 overflow-y: auto;
@@ -32,15 +31,15 @@
     
         .painel-pagamento {
             background: #f1f3f5;
-            padding: 10px; /* Reduzido */
+            padding: 10px; 
             border-radius: 8px;
             border-top: 2px solid #dee2e6;
-            margin-top: 5px; /* Espaço mínimo */
+            margin-top: 5px; 
         }
     
         .item-card { 
             border-left: 4px solid #0d6efd; 
-            margin-bottom: 2px !important; /* Espaço mínimo entre itens */
+            margin-bottom: 2px !important; 
             padding: 4px 10px !important; 
         }
     
@@ -102,7 +101,6 @@
     
                     <div class="painel-pagamento mt-auto">
                         <div class="row g-2 mb-2">
-                            <!-- Método de Pagamento -->
                             <div class="col-6">
                                 <label class="small fw-bold">Pagamento</label>
                                 <select id="metodoPgto" class="form-select form-select-sm" onchange="ajustarCamposPagamento()">
@@ -113,9 +111,8 @@
                                 </select>
                             </div>
                     
-                            <!-- Campo Dinâmico (Desconto ou Parcelas) -->
                             <div class="col-6" id="containerDinamico">
-                                <!-- Será preenchido pelo JavaScript -->
+                                <!-- Preenchido via JS -->
                             </div>
                         </div>
                         
@@ -150,7 +147,7 @@
             gainNode.connect(audioCtx.destination);
             oscillator.start();
             oscillator.stop(audioCtx.currentTime + 0.1);
-        } catch (e) { console.log("Áudio pendente de interação."); }
+        } catch (e) { console.log("Áudio bloqueado."); }
     }
 
     async function carregarEstoqueInicial() {
@@ -230,13 +227,11 @@
                     <option value="5">5x</option>
                 </select>`;
         } else {
-            // Débito ou outros
-            container.innerHTML = '';
+            container.innerHTML = ''; // Débito
         }
         atualizarInterface();
     }
 
-    
     function adicionarAoCarrinho(produto) {
         playBeep();
         const itemExistente = carrinho.find(item => item.codigo === produto.codigo);
@@ -279,15 +274,11 @@
                 </div>`;
         });
     
-        // Lógica de Desconto: Se o campo existe, multiplica o total pelo percentual
         const campoDesc = document.getElementById('desconto');
         const percDesconto = campoDesc ? parseFloat(campoDesc.value) : 0;
         const valorComDesconto = totalBruto * (1 - percDesconto);
         
         document.getElementById('totalExibicao').innerText = `R$ ${valorComDesconto.toFixed(2)}`;
-    }    
-        const desc = parseFloat(document.getElementById('desconto').value) || 0;
-        document.getElementById('totalExibicao').innerText = `R$ ${(totalBruto - desc).toFixed(2)}`;
     }
 
     async function enviarVenda() {
@@ -297,14 +288,13 @@
         const campoDesc = document.getElementById('desconto');
         const campoParc = document.getElementById('parcelas');
     
-        // Define as regras de negócio solicitadas
         let valorDesconto = campoDesc ? parseFloat(campoDesc.value) : 0;
-        let textoParcelas = (metodo === 'Cartão Crédito') ? (campoParc.value + "x") : "à vista";
+        let textoParcelas = (metodo === 'Cartão Crédito' && campoParc) ? (campoParc.value + "x") : "à vista";
     
         const infoVenda = {
             pagamento: metodo,
-            desconto: valorDesconto, // Envia 0.02, 0.05 etc.
-            parcelas: textoParcelas  // Envia "à vista" ou "1x", "2x"...
+            desconto: valorDesconto,
+            parcelas: textoParcelas
         };
     
         exibirLoader(true, "Finalizando Venda...");
