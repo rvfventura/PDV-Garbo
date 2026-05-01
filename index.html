@@ -323,7 +323,7 @@
     
     // No topo do script, certifique-se que esta variável existe
     // Garanta que essa variável esteja no topo do script
-    let descontoGlobal = 0; 
+    window.descontoGlobal = 0;
     
     function abrirModalDesconto() {
         // Em vez de prompt, mostramos o nosso modal HTML
@@ -337,17 +337,20 @@
     }
     
     function confirmarDesconto() {
-        const entrada = document.getElementById('inputValorDesconto').value;
+        const campoInput = document.getElementById('inputValorDesconto');
+        const entrada = campoInput.value;
         const valorNumerico = parseFloat(entrada.replace(',', '.'));
     
         if (!isNaN(valorNumerico) && valorNumerico >= 0 && valorNumerico <= 100) {
-            descontoGlobal = valorNumerico / 100;
-            // Não precisamos de aviso aqui para não poluir a tela
+            window.descontoGlobal = valorNumerico / 100;
         } else {
-            descontoGlobal = 0;
+            window.descontoGlobal = 0;
         }
         
-        atualizarInterface(); // Isso vai preencher os novos campos de texto
+        // Limpa o campo para a próxima abertura não vir com lixo
+        campoInput.value = ""; 
+        
+        atualizarInterface(); 
         fecharModalDesconto();
     }
         
@@ -451,6 +454,7 @@
     }
     function limparCarrinho() {
         carrinho = [];
+        window.descontoGlobal = 0; // Zera o desconto para a próxima venda
         document.getElementById('metodoPgto').value = "Pix";
         ajustarCamposPagamento();
         atualizarInterface();
