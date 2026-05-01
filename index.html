@@ -101,6 +101,7 @@
                         <div class="input-group input-group-sm mx-auto" style="max-width: 300px;">
                             <input type="text" id="manualInput" class="form-control" 
                                placeholder="Código manual" 
+                               inputmode="none"
                                style="text-transform: uppercase;" 
                                oninput="this.value = this.value.toUpperCase()"
                                onkeydown="if(event.key === 'Enter') buscarPorCodigo(this.value)">
@@ -429,6 +430,16 @@
             setTimeout(() => document.getElementById('manualInput').focus(), 500);
         }
     }
+    
+    // Adicione isto dentro da sua tag <script>, pode ser no final
+    document.getElementById('manualInput').addEventListener('click', function() {
+        this.removeAttribute('inputmode');
+        this.focus();
+    });
+    
+    document.getElementById('manualInput').addEventListener('blur', function() {
+        this.setAttribute('inputmode', 'none');
+    });
     
     window.onload = () => { console.log("Sistema pronto."); };
 </script>
