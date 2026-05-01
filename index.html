@@ -45,6 +45,10 @@
             margin-bottom: 2px !important; 
             padding: 4px 10px !important; 
         }
+
+        .item-card strong {
+            white-space: nowrap; /* Impede a quebra entre R$ e o valor */
+        }
     
         .item-nome {
             white-space: nowrap;
@@ -284,7 +288,7 @@
                         <div class="text-center" style="flex: 1; font-size: 0.85rem;">
                             <span class="badge bg-primary">${item.quantidade}x</span>
                         </div>
-                        <div class="d-flex align-items-center justify-content-end" style="flex: 1;">
+                        <div class="d-flex align-items-center justify-content-end" style="flex: 1.5; min-width: 90px;">
                             <strong class="me-2" style="font-size: 0.9rem;">R$ ${subtotal.toFixed(2)}</strong>
                             <button class="btn btn-sm btn-outline-danger border-0 p-0 px-2" onclick="removerUm(${idx})">✕</button>
                         </div>
@@ -309,28 +313,60 @@
         let valorDesconto = campoDesc ? parseFloat(campoDesc.value) : 0;
         let textoParcelas = (metodo === 'Cartão Crédito' && campoParc) ? (campoParc.value + "x") : "à vista";
     
-        const infoVenda = {
-            pagamento: metodo,
-            desconto: valorDesconto,
-            parcelas: textoParcelas,
-            vendedor: vendedorLogado
+        // Criamos o objeto consolidado para a planilha
+        const payload = {
+            acao: 'finalizarVenda',
+            dados: {
+                venda: {
+                    pagamento: metodo,
+                    desconto: valorDesconto,
+                    parcelas: textoParcelas,
+                    vendedor: vendedorLogado // Enviando o nome capturado no login
+                },
+                itens: carrinho
+            }
         };
     
         exibirLoader(true, "Finalizando Venda...");
         try {
             const response = await fetch(URL_API, {
                 method: 'POST',
-                body: JSON.stringify({ acao: 'finalizarVenda', dados: { venda: infoVenda, itens: carrinho } })
+                body: JSON.stringify(payload)
             });
             const res = await response.json();
             if (res.sucesso) {
-                alert("Venda registrada!");
+                alert("Venda registrada com sucesso!");
                 limparCarrinho();
                 await carregarEstoqueInicial();
-            } else { alert("Erro: " + res.erro); }
-        } catch (e) { alert("Erro de conexão."); }
-        finally { exibirLoader(false); }
+            } else { 
+                alert("Erro na planilha: " + res.erro); 
+            }
+        } catch (e) { 
+            alert("Erro de conexão com o Google Sheets."); 
+        } finally { 
+            exibirLoader(false); 
+        }
     }
+    exibirLoader(true, "Finalizando Venda...");
+    try {
+        const response = await fetch(URL_API, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+        const res = await response.json();
+        if (res.sucesso) {
+            alert("Venda registrada com sucesso!");
+            limparCarrinho();
+            await carregarEstoqueInicial();
+        } else { 
+            alert("Erro na planilha: " + res.erro); 
+        }
+    } catch (e) { 
+        alert("Erro de conexão com o Google Sheets."); 
+    } finally { 
+        exibirLoader(false); 
+    }
+}
 
     function removerUm(idx) {
         if (carrinho[idx].quantidade > 1) { carrinho[idx].quantidade -= 1; } 
