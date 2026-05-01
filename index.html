@@ -25,7 +25,7 @@
             
             .carrinho-container {
                 flex-grow: 1; 
-                height: calc(100vh - 380px); 
+                height: calc(100vh - 420px); 
                 min-height: 200px;
                 overflow-y: auto;
             }
@@ -66,9 +66,23 @@
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.8); z-index: 9999; justify-content: center; align-items: center;
         }
+
+        /* Estilo para a barra de avisos superior */
+        #containerAvisos {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            width: 90%;
+            max-width: 600px;
+        }
     </style>
 </head>
 <body>
+
+<!-- Espaço para Avisos (Sucesso/Erro) -->
+<div id="containerAvisos"></div>
 
 <div class="loading-overlay" id="loader">
     <div class="spinner-border text-primary" role="status"></div>
@@ -157,6 +171,23 @@
     let timestampUltimaLeitura = 0;
     let vendedorLogado = "";
 
+    // NOVA FUNÇÃO: Substitui o 'alert' por um aviso visual no topo
+    function mostrarAviso(mensagem, tipo = 'success') {
+        const container = document.getElementById('containerAvisos');
+        const cor = tipo === 'success' ? 'success' : 'danger';
+        
+        container.innerHTML = `
+            <div class="alert alert-${cor} shadow-lg text-center fw-bold animate__animated animate__fadeInDown" role="alert">
+                ${mensagem}
+            </div>
+        `;
+
+        // Remove o aviso automaticamente após 5 segundos
+        setTimeout(() => {
+            container.innerHTML = '';
+        }, 5000);
+    }
+
     function playBeep() {
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -217,8 +248,8 @@
                 });
                 const res = await response.json();
                 if (res.sucesso) { adicionarAoCarrinho(res); } 
-                else { alert("Produto não encontrado: " + codigo); }
-            } catch (e) { alert("Erro de conexão."); }
+                else { mostrarAviso("Produto não encontrado: " + codigo, 'error'); }
+            } catch (e) { mostrarAviso("Erro de conexão ao buscar produto.", 'error'); }
             finally { exibirLoader(false); }
         }
     }
@@ -274,7 +305,7 @@
         if (itemExistente) {
             itemExistente.quantidade += 1;
         } else {
-            carrinho.push({ ...produto, quantidade: 1 });
+            carrinho.push({ ...produto, grandmother: 1, quantidade: 1 });
         }
         const readerDiv = document.getElementById('reader');
         readerDiv.style.border = "5px solid #28a745";
@@ -330,7 +361,10 @@
     }
 
     async function enviarVenda() {
-        if (carrinho.length === 0) return alert("Carrinho vazio!");
+        if (carrinho.length === 0) {
+            mostrarAviso("O carrinho está vazio!", 'error');
+            return;
+        }
         
         const metodo = document.getElementById('metodoPgto').value;
         const campoParc = document.getElementById('parcelas');
@@ -366,14 +400,14 @@
             });
             const res = await response.json();
             if (res.sucesso) {
-                console.log("Venda registrada!");
-                limparCarrinho(); // Agora reseta campos e interface
+                mostrarAviso("VENDA CONCLUÍDA COM SUCESSO!", 'success');
+                limparCarrinho(); 
                 await carregarEstoqueInicial();
             } else { 
-                alert("Erro na planilha: " + res.erro); 
+                mostrarAviso("Erro na planilha: " + res.erro, 'error'); 
             }
         } catch (e) { 
-            alert("Erro de conexão com o Google Sheets."); 
+            mostrarAviso("Erro de conexão com o servidor.", 'error'); 
         } finally { 
             exibirLoader(false); 
         }
@@ -385,11 +419,10 @@
         atualizarInterface();
     }
 
-    // CORREÇÃO: Limpa o carrinho e reseta os seletores para o estado inicial
     function limparCarrinho() { 
         carrinho = []; 
         document.getElementById('metodoPgto').value = "Pix";
-        ajustarCamposPagamento(); // Força o reset dos campos de desconto/parcela
+        ajustarCamposPagamento();
         atualizarInterface(); 
         document.getElementById('manualInput').focus();
     }
@@ -404,15 +437,13 @@
         vendedorLogado = inputVendedor.value.trim();
     
         if (!vendedorLogado) {
-            alert("Por favor, informe seu nome para continuar.");
+            mostrarAviso("Informe seu nome para entrar.", 'error');
             return;
         }
         
         const docElm = document.documentElement;
         if (docElm.requestFullscreen) {
-            docElm.requestFullscreen().catch(err => {
-                console.log("Fullscreen negado:", err);
-            });
+            docElm.requestFullscreen().catch(err => console.log("Fullscreen negado:", err));
         }
     
         document.getElementById('telaAcesso').classList.add('oculto');
@@ -423,15 +454,15 @@
             await carregarEstoqueInicial(); 
             iniciarScanner(); 
             ajustarCamposPagamento(); 
+            mostrarAviso("Sistema pronto para uso!");
         } catch (e) {
-            console.error(e);
+            mostrarAviso("Erro ao carregar dados iniciais.", 'error');
         } finally {
             exibirLoader(false);
             setTimeout(() => document.getElementById('manualInput').focus(), 500);
         }
     }
     
-    // Adicione isto dentro da sua tag <script>, pode ser no final
     document.getElementById('manualInput').addEventListener('click', function() {
         this.removeAttribute('inputmode');
         this.focus();
