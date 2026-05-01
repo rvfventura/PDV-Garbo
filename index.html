@@ -15,7 +15,6 @@
             border-radius: 8px;
         }
 
-        /* Classe de utilidade para garantir a troca de telas */
         .oculto { display: none !important; }
     
         @media (min-width: 768px) {
@@ -46,8 +45,9 @@
             padding: 4px 10px !important; 
         }
 
+        /* CORREÇÃO: Impede a quebra do R$ */
         .item-card strong {
-            white-space: nowrap; /* Impede a quebra entre R$ e o valor */
+            white-space: nowrap !important;
         }
     
         .item-nome {
@@ -91,10 +91,8 @@
     </div>
 </div>
     
-<!-- Container Principal do PDV (Inicia com a classe oculto) -->
 <div class="container-fluid py-3 oculto" id="conteudoPrincipal">
     <div class="row g-3">
-        <!-- Lado Esquerdo: Scanner -->
         <div class="col-12 col-md-6">
             <div class="card shadow-sm border-0 h-100 d-flex align-items-center justify-content-center">
                 <div class="card-body text-center w-100 d-flex flex-column justify-content-center">
@@ -111,7 +109,6 @@
             </div>
         </div>
 
-        <!-- Lado Direito: Carrinho -->
         <div class="col-12 col-md-6">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body d-flex flex-column p-3">
@@ -133,10 +130,7 @@
                                     <option value="Cartão Crédito">Cartão Crédito</option>
                                 </select>
                             </div>
-                    
-                            <div class="col-6" id="containerDinamico">
-                                <!-- Preenchido via JS -->
-                            </div>
+                            <div class="col-6" id="containerDinamico"></div>
                         </div>
                         
                         <div class="d-flex justify-content-between align-items-center">
@@ -151,7 +145,7 @@
 </div>
 
 <script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbxoa5koa5BDioEZsCh6IYjhIu5HwiAppZ5q8C7d4YbyJj5kJiXPVqsSoHCCsbYMVPhRCQ/exec"; 
+    const URL_API = "https://script.google.com/macros/s/AKfycbyLc8TLlbAMHo9dtHgPqEAo0WFwtkMO5ugDkzVJIKoz8kfWuwQb3Thdt8og5q6LenkMig/exec"; 
     let carrinho = [];
     let estoqueLocal = [];
     let scanner;
@@ -282,13 +276,13 @@
             lista.innerHTML += `
                 <div class="card item-card shadow-sm">
                     <div class="d-flex align-items-center justify-content-between">
-                        <div class="item-nome" style="flex: 2;">
+                        <div class="item-nome" style="flex: 1.5;">
                             <strong>${item.nomeCombinado || item.nome}</strong>${tamanhoTexto}
                         </div>
-                        <div class="text-center" style="flex: 1; font-size: 0.85rem;">
+                        <div class="text-center" style="flex: 0.5; font-size: 0.85rem;">
                             <span class="badge bg-primary">${item.quantidade}x</span>
                         </div>
-                        <div class="d-flex align-items-center justify-content-end" style="flex: 1.5; min-width: 90px;">
+                        <div class="d-flex align-items-center justify-content-end" style="flex: 1.5; min-width: 105px;">
                             <strong class="me-2" style="font-size: 0.9rem;">R$ ${subtotal.toFixed(2)}</strong>
                             <button class="btn btn-sm btn-outline-danger border-0 p-0 px-2" onclick="removerUm(${idx})">✕</button>
                         </div>
@@ -299,7 +293,6 @@
         const campoDesc = document.getElementById('desconto');
         const percDesconto = campoDesc ? parseFloat(campoDesc.value) : 0;
         const valorComDesconto = totalBruto * (1 - percDesconto);
-        
         document.getElementById('totalExibicao').innerText = `R$ ${valorComDesconto.toFixed(2)}`;
     }
 
@@ -313,7 +306,6 @@
         let valorDesconto = campoDesc ? parseFloat(campoDesc.value) : 0;
         let textoParcelas = (metodo === 'Cartão Crédito' && campoParc) ? (campoParc.value + "x") : "à vista";
     
-        // Criamos o objeto consolidado para a planilha
         const payload = {
             acao: 'finalizarVenda',
             dados: {
@@ -321,7 +313,7 @@
                     pagamento: metodo,
                     desconto: valorDesconto,
                     parcelas: textoParcelas,
-                    vendedor: vendedorLogado // Enviando o nome capturado no login
+                    vendedor: vendedorLogado 
                 },
                 itens: carrinho
             }
@@ -347,26 +339,6 @@
             exibirLoader(false); 
         }
     }
-    exibirLoader(true, "Finalizando Venda...");
-    try {
-        const response = await fetch(URL_API, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-        const res = await response.json();
-        if (res.sucesso) {
-            alert("Venda registrada com sucesso!");
-            limparCarrinho();
-            await carregarEstoqueInicial();
-        } else { 
-            alert("Erro na planilha: " + res.erro); 
-        }
-    } catch (e) { 
-        alert("Erro de conexão com o Google Sheets."); 
-    } finally { 
-        exibirLoader(false); 
-    }
-}
 
     function removerUm(idx) {
         if (carrinho[idx].quantidade > 1) { carrinho[idx].quantidade -= 1; } 
@@ -390,36 +362,26 @@
             return;
         }
         
-        // 1. Tenta colocar em Tela Cheia
         if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen().catch(err => {
-                console.log("Erro ao ativar tela cheia:", err);
-            });
+            document.documentElement.requestFullscreen().catch(err => console.log(err));
         }
     
-        // 2. Troca de telas usando classes para evitar conflitos de renderização
-        const telaAcesso = document.getElementById('telaAcesso');
-        const pdvPrincipal = document.getElementById('conteudoPrincipal');
-
-        telaAcesso.classList.add('oculto');
-        pdvPrincipal.classList.remove('oculto');
+        document.getElementById('telaAcesso').classList.add('oculto');
+        document.getElementById('conteudoPrincipal').classList.remove('oculto');
     
-        // 3. Inicia o hardware e dados
         exibirLoader(true, "Iniciando sistema...");
         try {
             await carregarEstoqueInicial(); 
             iniciarScanner(); 
             ajustarCamposPagamento(); 
         } catch (e) {
-            console.error("Erro na inicialização:", e);
+            console.error(e);
         } finally {
             exibirLoader(false);
         }
     }
     
-    window.onload = () => {
-        console.log("Sistema pronto para acesso.");
-    };
+    window.onload = () => { console.log("Sistema pronto."); };
 </script>
 </body>
 </html>
