@@ -161,17 +161,32 @@
                             <div class="col-6" id="containerDinamico"></div>
                         </div>
                         
-                        <div class="d-flex align-items-center gap-2 flex-nowrap">
-                            <!-- O total agora tem 'flex-shrink-0' para garantir que não esprema -->
-                            <h4 class="m-0 text-primary flex-shrink-0" id="totalExibicao" style="min-width: 100px;">R$ 0,00</h4>
-                            
-                            <button class="btn btn-warning fw-bold btn-sm w-100" onclick="abrirModalDesconto()">
-                                % Desc
-                            </button>
-                            
-                            <button class="btn btn-success fw-bold btn-sm w-100" onclick="enviarVenda()">
-                                Finalizar
-                            </button>
+                        <div class="d-flex align-items-center gap-3">
+                            <!-- Área de Valores: Empilhada e organizada -->
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1">
+                                    <span class="small text-muted">Total:</span>
+                                    <span class="small fw-bold" id="valorBruto">R$ 0,00</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1">
+                                    <span class="small text-muted">Desc:</span>
+                                    <span class="small text-danger fw-bold" id="exibicaoDesconto">0%</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold">Pagar:</span>
+                                    <h4 class="m-0 text-primary fw-bold" id="totalExibicao">R$ 0,00</h4>
+                                </div>
+                            </div>
+                        
+                            <!-- Área de Botões: Um em cima do outro -->
+                            <div class="d-flex flex-column gap-2" style="min-width: 120px;">
+                                <button class="btn btn-warning fw-bold btn-sm py-2" onclick="abrirModalDesconto()">
+                                    % DESC
+                                </button>
+                                <button class="btn btn-success fw-bold btn-sm py-2" onclick="enviarVenda()">
+                                    FINALIZAR
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -327,13 +342,12 @@
     
         if (!isNaN(valorNumerico) && valorNumerico >= 0 && valorNumerico <= 100) {
             descontoGlobal = valorNumerico / 100;
-            mostrarAviso(`Desconto de ${valorNumerico}% aplicado.`);
+            // Não precisamos de aviso aqui para não poluir a tela
         } else {
             descontoGlobal = 0;
-            mostrarAviso("Desconto removido.", "error");
         }
         
-        atualizarInterface();
+        atualizarInterface(); // Isso vai preencher os novos campos de texto
         fecharModalDesconto();
     }
         
@@ -356,6 +370,7 @@
         let totalBruto = 0;
         let totalPecas = 0;
         lista.innerHTML = "";
+        
         carrinho.forEach((item, idx) => {
             const subtotal = item.preco * item.quantidade;
             totalBruto += subtotal;
@@ -380,10 +395,13 @@
     
         document.getElementById('qtdItens').innerText = totalPecas;
     
-        // MODIFICAÇÃO CIRÚRGICA: 
-        // O cálculo agora ignora os elementos antigos e usa a variável global definida pelo novo botão.
-        const valorComDesconto = totalBruto * (1 - (window.descontoGlobal || 0));
-        
+        // CÁLCULOS E EXIBIÇÃO:
+        const desc = window.descontoGlobal || 0;
+        const valorComDesconto = totalBruto * (1 - desc);
+    
+        // Atualiza os novos campos na tela
+        document.getElementById('valorBruto').innerText = `R$ ${totalBruto.toFixed(2)}`;
+        document.getElementById('exibicaoDesconto').innerText = `${(desc * 100).toFixed(0)}%`;
         document.getElementById('totalExibicao').innerText = `R$ ${valorComDesconto.toFixed(2)}`;
     }
     
