@@ -204,23 +204,22 @@
         } catch (e) { console.log("Áudio bloqueado."); }
     }
     function sairDoSistema() {
-        // Remove o monitor de histórico para não entrar em loop
         window.onpopstate = null;
-        
         vendedorLogado = "";
         document.getElementById('vendedorAtivo').value = "";
         carrinho = [];
         atualizarInterface();
-    
-        // Tenta sair do Fullscreen se estiver nele
+        
+        // Tenta sair do Fullscreen se ainda estiver ativo
         if (document.fullscreenElement || document.webkitFullscreenElement) {
-            const sairFS = document.exitFullscreen || document.webkitExitFullscreen;
-            if (sairFS) sairFS.call(document).catch(err => console.log(err));
+            const exitFS = document.exitFullscreen || document.webkitExitFullscreen;
+            if (exitFS) exitFS.call(document).catch(err => console.log(err));
         }
-    
+        
         document.getElementById('conteudoPrincipal').classList.add('oculto');
         document.getElementById('telaAcesso').classList.remove('oculto');
     }
+    
     async function carregarEstoqueInicial() {
         exibirLoader(true, "Sincronizando estoque...");
         try {
@@ -433,20 +432,20 @@
         if (texto) document.getElementById('loaderText').innerText = texto;
     }
     async function iniciarSistema() {
-    const inputVendedor = document.getElementById('vendedorAtivo');
-    const nomeInformado = inputVendedor.value.trim();
-    if (!nomeInformado) {
-        mostrarAviso("Por favor, informe seu nome para acessar o PDV.", 'error');
-        inputVendedor.focus();
-        return;
-    }
-    vendedorLogado = nomeInformado;
-
-    // Ativa Fullscreen com suporte a Webkit (Android Chrome)
-    const docElm = document.documentElement;
+        const inputVendedor = document.getElementById('vendedorAtivo');
+        const nomeInformado = inputVendedor.value.trim();
+        if (!nomeInformado) {
+            mostrarAviso("Por favor, informe seu nome para acessar o PDV.", 'error');
+            inputVendedor.focus();
+            return;
+        }
+        vendedorLogado = nomeInformado;
+    
+        const docElm = document.documentElement;
         try {
-            const pedirFS = docElm.requestFullscreen || docElm.webkitRequestFullscreen;
-            if (pedirFS) await pedirFS.call(docElm);
+            // Tenta o método padrão e o prefixado para Android
+            const requestFS = docElm.requestFullscreen || docElm.webkitRequestFullscreen;
+            if (requestFS) await requestFS.call(docElm);
         } catch (err) {
             console.log("Acesso à tela cheia negado.");
         }
@@ -454,9 +453,8 @@
         document.getElementById('telaAcesso').classList.add('oculto');
         document.getElementById('conteudoPrincipal').classList.remove('oculto');
         
-        // ATIVAÇÃO DA NAVEGAÇÃO CORRIGIDA
         gerenciarNavegaçãoAndroid();
-    
+        
         exibirLoader(true, "Iniciando sistema...");
         try {
             await carregarEstoqueInicial();
@@ -471,19 +469,30 @@
     }
     
     function gerenciarNavegaçãoAndroid() {
-        // Empilhamos dois estados: 
-        // O primeiro o Android consome ao sair do Fullscreen
-        // O segundo dispara o popstate que limpa o sistema
-        history.pushState({ etapa: 1 }, null, "");
-        history.pushState({ etapa: 2 }, null, "");
+        // Adiciona uma entrada no histórico
+        history.pushState({ pdvAtivo: true }, null, "");
     
+        // Evento disparado quando o usuário clica em "Voltar"
         window.onpopstate = function () {
             if (vendedorLogado !== "") {
                 sairDoSistema();
-                mostrarAviso("Sessão encerrada.");
             }
         };
+    
+        // O PULO DO GATO: Monitora a saída do Fullscreen
+        // Quando o 1º clique tirar o Fullscreen, ele chama o sairDoSistema()
+        const mudarFS = () => {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (vendedorLogado !== "") {
+                    sairDoSistema();
+                }
+            }
+        };
+    
+        document.addEventListener('fullscreenchange', mudarFS);
+        document.addEventListener('webkitfullscreenchange', mudarFS);
     }
+    
     document.getElementById('manualInput').addEventListener('click', function () {
         this.removeAttribute('inputmode');
         this.focus();
