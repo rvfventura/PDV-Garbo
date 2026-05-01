@@ -210,11 +210,11 @@
                 body: JSON.stringify({ acao: 'carregarEstoque' })
             });
             const res = await response.json();
+            
             if (res.sucesso) {
-                estoqueLocal = res.lista;
+                // FILTRO: Remove linhas onde o código está em branco ou nulo
+                estoqueLocal = res.lista.filter(item => item.codigo && item.codigo.toString().trim() !== "");
                 
-                // NOVA LÓGICA: Soma a quantidade de cada item em vez de contar linhas
-                // Considera 'estoque_atual' como o nome da coluna vinda da planilha
                 const totalPecas = estoqueLocal.reduce((acc, item) => {
                     const qtd = parseFloat(item.quantidade) || 0;
                     return acc + qtd;
