@@ -161,12 +161,15 @@
                             <div class="col-6" id="containerDinamico"></div>
                         </div>
                         
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="m-0 text-primary" id="totalExibicao">R$ 0,00</h4>
-                            <button class="btn btn-warning fw-bold w-100" onclick="abrirModalDesconto()">
-                                % Desconto
+                        <div class="d-flex align-items-center gap-2 flex-nowrap">
+                            <!-- O total agora tem 'flex-shrink-0' para garantir que não esprema -->
+                            <h4 class="m-0 text-primary flex-shrink-0" id="totalExibicao" style="min-width: 100px;">R$ 0,00</h4>
+                            
+                            <button class="btn btn-warning fw-bold btn-sm w-100" onclick="abrirModalDesconto()">
+                                % Desc
                             </button>
-                            <button class="btn btn-success fw-bold w-100" onclick="enviarVenda()">
+                            
+                            <button class="btn btn-success fw-bold btn-sm w-100" onclick="enviarVenda()">
                                 Finalizar
                             </button>
                         </div>
@@ -303,28 +306,30 @@
         atualizarInterface();
     }
     
-    let descontoGlobal = 0; // Armazena o desconto em decimal (ex: 0.05 para 5%)
-
+    // No topo do script, certifique-se que esta variável existe
+    let descontoGlobal = 0; 
+    
     function abrirModalDesconto() {
-        const valor = prompt("Digite o desconto desejado em % (apenas números):", (descontoGlobal * 100));
-        if (valor !== null) {
-            descontoGlobal = parseFloat(valor) / 100 || 0;
-            mostrarAviso(`Desconto de ${(descontoGlobal * 100).toFixed(0)}% aplicado!`);
+        // Armazenamos o valor atual para mostrar como padrão no prompt
+        const valorPadrao = (descontoGlobal * 100).toFixed(0);
+        const entrada = prompt("Digite o desconto em % (0 a 100):", valorPadrao);
+    
+        // Se o usuário clicar em 'Cancelar', a variável 'entrada' será null.
+        // Verificamos isso para não fazer nada e não disparar o popstate.
+        if (entrada !== null) {
+            const valorNumerico = parseFloat(entrada.replace(',', '.'));
+            
+            if (!isNaN(valorNumerico) && valorNumerico >= 0 && valorNumerico <= 100) {
+                descontoGlobal = valorNumerico / 100;
+                mostrarAviso(`Desconto de ${valorNumerico}% aplicado.`);
+            } else {
+                descontoGlobal = 0;
+                mostrarAviso("Desconto removido ou valor inválido.", "error");
+            }
             atualizarInterface();
         }
     }
-    /* function verificarDescontoPersonalizado() {
-        const select = document.getElementById('desconto');
-        const inputManual = document.getElementById('descontoManual');
-        if (select.value === 'outro') {
-            inputManual.classList.remove('oculto');
-        } else {
-            inputManual.classList.add('oculto');
-            inputManual.value = '';
-        }
-        atualizarInterface();
-    } */
-    
+        
     function adicionarAoCarrinho(produto) {
         playBeep();
         const itemExistente = carrinho.find(item => item.codigo === produto.codigo);
