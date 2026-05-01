@@ -373,9 +373,13 @@
             });
             const res = await response.json();
             if (res.sucesso) {
-                alert("Venda registrada com sucesso!");
+                // Em vez de alert, usamos um feedback mais suave ou garantimos a tela cheia
+                console.log("Venda registrada!");
                 limparCarrinho();
                 await carregarEstoqueInicial();
+                
+                // Reforça a permanência na tela do PDV
+                document.getElementById('conteudoPrincipal').classList.remove('oculto');
             } else { 
                 alert("Erro na planilha: " + res.erro); 
             }
@@ -402,14 +406,18 @@
     async function iniciarSistema() {
         const inputVendedor = document.getElementById('vendedorAtivo');
         vendedorLogado = inputVendedor.value.trim();
-
+    
         if (!vendedorLogado) {
             alert("Por favor, informe seu nome para continuar.");
             return;
         }
         
-        if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen().catch(err => console.log(err));
+        // Solicita Fullscreen
+        const docElm = document.documentElement;
+        if (docElm.requestFullscreen) {
+            docElm.requestFullscreen().catch(err => {
+                console.log("Fullscreen negado ou erro:", err);
+            });
         }
     
         document.getElementById('telaAcesso').classList.add('oculto');
@@ -424,6 +432,8 @@
             console.error(e);
         } finally {
             exibirLoader(false);
+            // Garante foco no input manual após carregar para agilizar a próxima venda
+            setTimeout(() => document.getElementById('manualInput').focus(), 500);
         }
     }
     
