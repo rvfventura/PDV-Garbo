@@ -215,24 +215,23 @@
 
     // Função para deslogar o vendedor e resetar a tela
     function sairDoSistema() {
-        // 1. Limpa os dados sensíveis
+        // Desativa o monitoramento do botão voltar para evitar conflitos
+        window.onpopstate = null;
+    
+        // Reseta as variáveis e interface
         vendedorLogado = "";
         document.getElementById('vendedorAtivo').value = "";
         carrinho = [];
-        
-        // 2. Reseta a interface do carrinho
         atualizarInterface();
-        
-        // 3. Sai do modo tela cheia (opcional)
+    
+        // Sai da tela cheia
         if (document.fullscreenElement) {
             document.exitFullscreen().catch(err => console.log(err));
         }
-        
-        // 4. Alterna as telas
+    
+        // Volta para a tela de login
         document.getElementById('conteudoPrincipal').classList.add('oculto');
         document.getElementById('telaAcesso').classList.remove('oculto');
-        
-        mostrarAviso("Sessão encerrada com sucesso.");
     }
     
     // Atualize sua função de carregar estoque para incluir o aviso de sucesso
@@ -509,7 +508,9 @@
         // 4. Troca de telas
         document.getElementById('telaAcesso').classList.add('oculto');
         document.getElementById('conteudoPrincipal').classList.remove('oculto');
-    
+        // Ativa o monitoramento do botão voltar
+        gerenciarNavegaçãoAndroid();
+        
         // 5. Sincronização Inicial
         exibirLoader(true, "Iniciando sistema...");
         try {
@@ -533,6 +534,23 @@
     document.getElementById('manualInput').addEventListener('blur', function() {
         this.setAttribute('inputmode', 'none');
     });
+
+    // Adiciona um estado no histórico para capturar o "Voltar"
+    function gerenciarNavegaçãoAndroid() {
+        // Empurra um estado novo para o histórico
+        history.pushState({ pdvAtivo: true }, null, location.href);
+        
+        window.onpopstate = function (event) {
+            // Se o PDV estava ativo e o usuário tentou voltar
+            if (vendedorLogado !== "") {
+                // Executamos a saída do sistema
+                sairDoSistema();
+                
+                // Opcional: Avisa o usuário por que ele saiu
+                mostrarAviso("Sessão encerrada via navegação do dispositivo.");
+            }
+        };
+    }
     
     window.onload = () => { console.log("Sistema pronto."); };
 </script>
