@@ -92,7 +92,7 @@
 <!-- Tela de Acesso -->
 <div id="telaAcesso" class="d-flex justify-content-center align-items-center" style="position: fixed; top:0; left:0; width:100%; height:100%; background: #f8f9fa; z-index: 20000;">
     <div class="card shadow-lg p-4 text-center" style="max-width: 400px; width: 90%;">
-        <h3 class="mb-4 text-primary">Acesso ao PDV GARBO 1.0</h3>
+        <h3 class="mb-4 text-primary">Acesso ao PDV GARBO</h3>
         <div class="mb-3 text-start">
             <label class="form-label fw-bold">Nome do Vendedor</label>
             <input type="text" id="vendedorAtivo" class="form-control form-control-lg" placeholder="Digite seu nome">
@@ -212,9 +212,20 @@
             const res = await response.json();
             if (res.sucesso) {
                 estoqueLocal = res.lista;
-                document.getElementById('statusCache').innerText = `Estoque local: ${estoqueLocal.length} produtos.`;
+                
+                // NOVA LÓGICA: Soma a quantidade de cada item em vez de contar linhas
+                // Considera 'estoque_atual' como o nome da coluna vinda da planilha
+                const totalPecas = estoqueLocal.reduce((acc, item) => {
+                    const qtd = parseFloat(item.estoque_atual) || 0;
+                    return acc + qtd;
+                }, 0);
+    
+                document.getElementById('statusCache').innerText = `Estoque local: ${totalPecas} peças em ${estoqueLocal.length} modelos.`;
             }
-        } catch (e) { console.error("Erro cache:", e); }
+        } catch (e) { 
+            console.error("Erro cache:", e); 
+            mostrarAviso("Erro ao sincronizar estoque real.", 'error');
+        }
     }
 
     function iniciarScanner() {
