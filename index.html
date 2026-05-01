@@ -45,7 +45,6 @@
             padding: 4px 10px !important; 
         }
 
-        /* CORREÇÃO: Impede a quebra do R$ */
         .item-card strong {
             white-space: nowrap !important;
         }
@@ -256,11 +255,9 @@
         atualizarInterface();
     }
     
-    // Função para mostrar/esconder o campo de texto do desconto
     function verificarDescontoPersonalizado() {
         const select = document.getElementById('desconto');
         const inputManual = document.getElementById('descontoManual');
-        
         if (select.value === 'outro') {
             inputManual.classList.remove('oculto');
         } else {
@@ -288,13 +285,13 @@
     function atualizarInterface() {
         const lista = document.getElementById('listaCarrinho');
         let totalBruto = 0;
-        let totalPecas = 0; // Contador de unidades
+        let totalPecas = 0;
         lista.innerHTML = "";
     
         carrinho.forEach((item, idx) => {
             const subtotal = item.preco * item.quantidade;
             totalBruto += subtotal;
-            totalPecas += item.quantidade; // Soma as quantidades de cada item
+            totalPecas += item.quantidade;
             const tamanhoTexto = item.tamanho ? `<span class="item-tamanho"> | ${item.tamanho}</span>` : "";
             
             lista.innerHTML += `
@@ -314,16 +311,13 @@
                 </div>`;
         });
     
-        // Atualiza o contador de itens no título
         document.getElementById('qtdItens').innerText = totalPecas;
     
-        // Lógica do Desconto
         const selectDesc = document.getElementById('desconto');
         const inputManual = document.getElementById('descontoManual');
         let percDesconto = 0;
     
         if (selectDesc && selectDesc.value === 'outro') {
-            // Converte o valor digitado (ex: 10) para decimal (0.10)
             const valorDigitado = parseFloat(inputManual.value) || 0;
             percDesconto = valorDigitado / 100;
         } else if (selectDesc) {
@@ -338,9 +332,7 @@
         if (carrinho.length === 0) return alert("Carrinho vazio!");
         
         const metodo = document.getElementById('metodoPgto').value;
-        const campoDesc = document.getElementById('desconto');
         const campoParc = document.getElementById('parcelas');
-    
         const selectDesc = document.getElementById('desconto');
         const inputManual = document.getElementById('descontoManual');
         let valorDesconto = 0;
@@ -373,13 +365,9 @@
             });
             const res = await response.json();
             if (res.sucesso) {
-                // Em vez de alert, usamos um feedback mais suave ou garantimos a tela cheia
                 console.log("Venda registrada!");
-                limparCarrinho();
+                limparCarrinho(); // Agora reseta campos e interface
                 await carregarEstoqueInicial();
-                
-                // Reforça a permanência na tela do PDV
-                document.getElementById('conteudoPrincipal').classList.remove('oculto');
             } else { 
                 alert("Erro na planilha: " + res.erro); 
             }
@@ -396,7 +384,14 @@
         atualizarInterface();
     }
 
-    function limparCarrinho() { carrinho = []; atualizarInterface(); }
+    // CORREÇÃO: Limpa o carrinho e reseta os seletores para o estado inicial
+    function limparCarrinho() { 
+        carrinho = []; 
+        document.getElementById('metodoPgto').value = "Pix";
+        ajustarCamposPagamento(); // Força o reset dos campos de desconto/parcela
+        atualizarInterface(); 
+        document.getElementById('manualInput').focus();
+    }
     
     function exibirLoader(show, texto = "") { 
         document.getElementById('loader').style.display = show ? 'flex' : 'none'; 
@@ -412,11 +407,10 @@
             return;
         }
         
-        // Solicita Fullscreen
         const docElm = document.documentElement;
         if (docElm.requestFullscreen) {
             docElm.requestFullscreen().catch(err => {
-                console.log("Fullscreen negado ou erro:", err);
+                console.log("Fullscreen negado:", err);
             });
         }
     
@@ -432,7 +426,6 @@
             console.error(e);
         } finally {
             exibirLoader(false);
-            // Garante foco no input manual após carregar para agilizar a próxima venda
             setTimeout(() => document.getElementById('manualInput').focus(), 500);
         }
     }
