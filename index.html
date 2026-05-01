@@ -399,29 +399,45 @@
         
         vendedorLogado = nome;
         
-        // Ativa Fullscreen
         const docElm = document.documentElement;
         try {
             if (docElm.requestFullscreen) await docElm.requestFullscreen();
             else if (docElm.webkitRequestFullscreen) await docElm.webkitRequestFullscreen();
         } catch (err) { console.log("Fullscreen negado"); }
-
+    
         document.getElementById('telaAcesso').classList.add('oculto');
         document.getElementById('conteudoPrincipal').classList.remove('oculto');
         
-        // GERENCIAMENTO DE HISTÓRICO CORRIGIDO
-        history.pushState({ page: 'pdv' }, null, ""); 
+        // ESTRATÉGIA DE DUPLO HISTÓRICO:
+        // Criamos dois estados. O primeiro o navegador consome ao sair do Fullscreen.
+        history.pushState({ step: 1 }, null, ""); 
+        history.pushState({ step: 2 }, null, ""); 
+    
         window.onpopstate = function (event) {
-            // Se o usuário clicar em voltar, forçamos a saída total
+            // Se houver qualquer tentativa de voltar, encerramos tudo
             sairDoSistema();
         };
-
+    
         await carregarEstoqueInicial();
         iniciarScanner();
         ajustarCamposPagamento();
         setTimeout(() => document.getElementById('manualInput').focus(), 500);
     }
 
+    // Detecta quando o usuário sai do Fullscreen (seja pelo botão voltar ou gesto)
+    function monitorarMudancaFullscreen() {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            // Se o vendedor ainda estiver logado mas saiu do Fullscreen, força a tela de login
+            if (vendedorLogado !== "") {
+                sairDoSistema();
+            }
+        }
+    }
+    
+    // Registra o monitor para diferentes navegadores
+    document.addEventListener('fullscreenchange', monitorarMudancaFullscreen);
+    document.addEventListener('webkitfullscreenchange', monitorarMudancaFullscreen);
+    
     // Eventos de Teclado Manual
     document.getElementById('manualInput').addEventListener('click', function() {
         this.removeAttribute('inputmode');
