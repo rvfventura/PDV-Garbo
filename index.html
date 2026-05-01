@@ -70,12 +70,12 @@
         /* Estilo para a barra de avisos superior */
         #containerAvisos {
             position: fixed;
-            top: 10px;
+            top: 20px; /* Desci um pouco mais para não colar no topo */
             left: 50%;
             transform: translateX(-50%);
-            z-index: 10000;
+            z-index: 30000; /* Valor maior que a tela de acesso e loaders */
             width: 90%;
-            max-width: 600px;
+            max-width: 500px;
         }
     </style>
 </head>
@@ -484,27 +484,39 @@
 
     async function iniciarSistema() {
         const inputVendedor = document.getElementById('vendedorAtivo');
-        vendedorLogado = inputVendedor.value.trim();
+        const nomeInformado = inputVendedor.value.trim();
     
-        if (!vendedorLogado) {
-            mostrarAviso("Informe seu nome para entrar.", 'error');
-            return;
+        // 1. VALIDAÇÃO PRIMÁRIA: Se estiver vazio, avisa e interrompe
+        if (!nomeInformado) {
+            mostrarAviso("Por favor, informe seu nome para acessar o PDV.", 'error');
+            inputVendedor.focus();
+            return; // O 'return' impede que o sistema tente entrar ou peça tela cheia
         }
         
+        // 2. Se chegou aqui, o nome é válido
+        vendedorLogado = nomeInformado;
+    
+        // 3. Tenta ativar a Tela Cheia
         const docElm = document.documentElement;
-        if (docElm.requestFullscreen) {
-            docElm.requestFullscreen().catch(err => console.log("Fullscreen negado:", err));
+        try {
+            if (docElm.requestFullscreen) {
+                await docElm.requestFullscreen();
+            }
+        } catch (err) {
+            console.log("Acesso à tela cheia negado ou indisponível.");
         }
     
+        // 4. Troca de telas
         document.getElementById('telaAcesso').classList.add('oculto');
         document.getElementById('conteudoPrincipal').classList.remove('oculto');
     
+        // 5. Sincronização Inicial
         exibirLoader(true, "Iniciando sistema...");
         try {
+            // Agora o carregarEstoqueInicial já tem seu próprio mostrarAviso interno
             await carregarEstoqueInicial(); 
             iniciarScanner(); 
             ajustarCamposPagamento(); 
-            mostrarAviso("Sistema pronto para uso!");
         } catch (e) {
             mostrarAviso("Erro ao carregar dados iniciais.", 'error');
         } finally {
