@@ -433,17 +433,17 @@
         if (texto) document.getElementById('loaderText').innerText = texto;
     }
     async function iniciarSistema() {
-        const inputVendedor = document.getElementById('vendedorAtivo');
-        const nomeInformado = inputVendedor.value.trim();
-        if (!nomeInformado) {
-            mostrarAviso("Por favor, informe seu nome para acessar o PDV.", 'error');
-            inputVendedor.focus();
-            return;
-        }
-        vendedorLogado = nomeInformado;
-    
-        // Ativa Fullscreen com suporte a Webkit (Android Chrome)
-        const docElm = document.documentElement;
+    const inputVendedor = document.getElementById('vendedorAtivo');
+    const nomeInformado = inputVendedor.value.trim();
+    if (!nomeInformado) {
+        mostrarAviso("Por favor, informe seu nome para acessar o PDV.", 'error');
+        inputVendedor.focus();
+        return;
+    }
+    vendedorLogado = nomeInformado;
+
+    // Ativa Fullscreen com suporte a Webkit (Android Chrome)
+    const docElm = document.documentElement;
         try {
             const pedirFS = docElm.requestFullscreen || docElm.webkitRequestFullscreen;
             if (pedirFS) await pedirFS.call(docElm);
@@ -491,16 +491,7 @@
     document.getElementById('manualInput').addEventListener('blur', function () {
         this.setAttribute('inputmode', 'none');
     });
-    function gerenciarNavegaçãoAndroid() {
-        history.pushState({ pdvAtivo: true }, null, location.href);
-        window.onpopstate = function () {
-            if (vendedorLogado !== "") {
-                sairDoSistema();
-                mostrarAviso("Sessão encerrada via navegação do dispositivo.");
-            }
-        };
-    }
-
+    
     // Se o usuário sair do Fullscreen por qualquer motivo, deslogamos por segurança
     const eventoFS = 'onwebkitfullscreenchange' in document ? 'webkitfullscreenchange' : 'fullscreenchange';
     document.addEventListener(eventoFS, () => {
