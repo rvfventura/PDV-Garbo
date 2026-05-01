@@ -100,7 +100,11 @@
                     <div id="reader" class="mx-auto"></div>
                     <div class="mt-3">
                         <div class="input-group input-group-sm mx-auto" style="max-width: 300px;">
-                            <input type="text" id="manualInput" class="form-control" placeholder="Código manual">
+                            <input type="text" id="manualInput" class="form-control" 
+                               placeholder="Código manual" 
+                               style="text-transform: uppercase;" 
+                               oninput="this.value = this.value.toUpperCase()"
+                               onkeydown="if(event.key === 'Enter') buscarPorCodigo(this.value)">
                             <button class="btn btn-primary" onclick="buscarPorCodigo(document.getElementById('manualInput').value)">Add</button>
                         </div>
                     </div>
@@ -113,7 +117,7 @@
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body d-flex flex-column p-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="m-0">Carrinho</h5>
+                        <h5 class="m-0">Carrinho (<span id="qtdItens">0</span>)</h5>
                         <button class="btn btn-sm btn-outline-danger" onclick="limparCarrinho()">Limpar</button>
                     </div>
                     
@@ -226,12 +230,16 @@
         if (metodo === 'Pix' || metodo === 'Dinheiro') {
             container.innerHTML = `
                 <label class="small fw-bold">Desconto %</label>
-                <select id="desconto" class="form-select form-select-sm" onchange="atualizarInterface()">
-                    <option value="0">0%</option>
-                    <option value="0.02">2%</option>
-                    <option value="0.05">5%</option>
-                    <option value="0.1">10%</option>
-                </select>`;
+                <div class="input-group input-group-sm">
+                    <select id="desconto" class="form-select" onchange="verificarDescontoPersonalizado()">
+                        <option value="0">0%</option>
+                        <option value="0.02">2%</option>
+                        <option value="0.05">5%</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                    <input type="number" id="descontoManual" class="form-control oculto" 
+                           placeholder="10" oninput="atualizarInterface()" style="max-width: 60px;">
+                </div>`;
         } else if (metodo === 'Cartão Crédito') {
             container.innerHTML = `
                 <label class="small fw-bold">Parcelas</label>
@@ -244,6 +252,20 @@
                 </select>`;
         } else {
             container.innerHTML = ''; 
+        }
+        atualizarInterface();
+    }
+    
+    // Função para mostrar/esconder o campo de texto do desconto
+    function verificarDescontoPersonalizado() {
+        const select = document.getElementById('desconto');
+        const inputManual = document.getElementById('descontoManual');
+        
+        if (select.value === 'outro') {
+            inputManual.classList.remove('oculto');
+        } else {
+            inputManual.classList.add('oculto');
+            inputManual.value = '';
         }
         atualizarInterface();
     }
@@ -266,11 +288,13 @@
     function atualizarInterface() {
         const lista = document.getElementById('listaCarrinho');
         let totalBruto = 0;
+        let totalPecas = 0; // Contador de unidades
         lista.innerHTML = "";
     
         carrinho.forEach((item, idx) => {
             const subtotal = item.preco * item.quantidade;
             totalBruto += subtotal;
+            totalPecas += item.quantidade; // Soma as quantidades de cada item
             const tamanhoTexto = item.tamanho ? `<span class="item-tamanho"> | ${item.tamanho}</span>` : "";
             
             lista.innerHTML += `
@@ -290,8 +314,22 @@
                 </div>`;
         });
     
-        const campoDesc = document.getElementById('desconto');
-        const percDesconto = campoDesc ? parseFloat(campoDesc.value) : 0;
+        // Atualiza o contador de itens no título
+        document.getElementById('qtdItens').innerText = totalPecas;
+    
+        // Lógica do Desconto
+        const selectDesc = document.getElementById('desconto');
+        const inputManual = document.getElementById('descontoManual');
+        let percDesconto = 0;
+    
+        if (selectDesc && selectDesc.value === 'outro') {
+            // Converte o valor digitado (ex: 10) para decimal (0.10)
+            const valorDigitado = parseFloat(inputManual.value) || 0;
+            percDesconto = valorDigitado / 100;
+        } else if (selectDesc) {
+            percDesconto = parseFloat(selectDesc.value);
+        }
+    
         const valorComDesconto = totalBruto * (1 - percDesconto);
         document.getElementById('totalExibicao').innerText = `R$ ${valorComDesconto.toFixed(2)}`;
     }
@@ -303,7 +341,15 @@
         const campoDesc = document.getElementById('desconto');
         const campoParc = document.getElementById('parcelas');
     
-        let valorDesconto = campoDesc ? parseFloat(campoDesc.value) : 0;
+        const selectDesc = document.getElementById('desconto');
+        const inputManual = document.getElementById('descontoManual');
+        let valorDesconto = 0;
+        
+        if (selectDesc && selectDesc.value === 'outro') {
+            valorDesconto = (parseFloat(inputManual.value) || 0) / 100;
+        } else if (selectDesc) {
+            valorDesconto = parseFloat(selectDesc.value);
+        }
         let textoParcelas = (metodo === 'Cartão Crédito' && campoParc) ? (campoParc.value + "x") : "à vista";
     
         const payload = {
