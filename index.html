@@ -60,6 +60,9 @@
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.8); z-index: 9999; justify-content: center; align-items: center;
         }
+
+        /* Garante que o PDV comece escondido */
+        #conteudoPrincipal { display: none; }
     </style>
 </head>
 <body>
@@ -68,16 +71,14 @@
     <div class="spinner-border text-primary" role="status"></div>
     <span class="ms-2" id="loaderText">Sincronizando Dados...</span>
 </div>
-<!-- Tela de Acesso -->
+
+<!-- Tela de Acesso (Ajustada para Input de Texto) -->
 <div id="telaAcesso" class="d-flex justify-content-center align-items-center" style="position: fixed; top:0; left:0; width:100%; height:100%; background: #f8f9fa; z-index: 20000;">
     <div class="card shadow-lg p-4 text-center" style="max-width: 400px; width: 90%;">
         <h3 class="mb-4 text-primary">Acesso ao PDV</h3>
         <div class="mb-3 text-start">
-            <label class="form-label fw-bold">Identificação do Vendedor</label>
-            <select id="vendedorAtivo" class="form-select form-select-lg">
-                <option value="Rodrigo">Rodrigo</option>
-                <option value="Esposa">Esposa</option> <!-- Você pode colocar o nome dela aqui -->
-            </select>
+            <label class="form-label fw-bold">Nome do Vendedor</label>
+            <input type="text" id="vendedorAtivo" class="form-control form-control-lg" placeholder="Digite seu nome">
         </div>
         <button class="btn btn-primary btn-lg w-100 py-3" onclick="iniciarSistema()">
             ENTRAR E ATIVAR PDV ⛶
@@ -86,7 +87,8 @@
     </div>
 </div>
     
-<div class="container-fluid py-3">
+<!-- Container Principal (ID Adicionado para o JS funcionar) -->
+<div class="container-fluid py-3" id="conteudoPrincipal">
     <div class="row g-3">
         <!-- Lado Esquerdo: Scanner -->
         <div class="col-12 col-md-6">
@@ -151,6 +153,7 @@
     let scanner;
     let ultimoCodigoLido = "";
     let timestampUltimaLeitura = 0;
+    let vendedorLogado = ""; // Variável global
 
     function playBeep() {
         try {
@@ -244,7 +247,7 @@
                     <option value="5">5x</option>
                 </select>`;
         } else {
-            container.innerHTML = ''; // Débito
+            container.innerHTML = ''; 
         }
         atualizarInterface();
     }
@@ -344,11 +347,14 @@
         if(texto) document.getElementById('loaderText').innerText = texto;
     }
 
-    // Variável global para saber quem está vendendo
-    let vendedorLogado = "";
-    
     async function iniciarSistema() {
-        vendedorLogado = document.getElementById('vendedorAtivo').value;
+        const inputVendedor = document.getElementById('vendedorAtivo');
+        vendedorLogado = inputVendedor.value.trim();
+
+        if (!vendedorLogado) {
+            alert("Por favor, informe seu nome para continuar.");
+            return;
+        }
         
         // 1. Tenta colocar em Tela Cheia
         if (document.documentElement.requestFullscreen) {
@@ -361,15 +367,14 @@
         document.getElementById('telaAcesso').style.display = 'none';
         document.getElementById('conteudoPrincipal').style.display = 'block';
     
-        // 3. Inicia o hardware (Câmera e Cache)
+        // 3. Inicia o hardware
         exibirLoader(true, "Iniciando sistema...");
-        await carregarEstoqueInicial(); //
-        iniciarScanner(); //
-        ajustarCamposPagamento(); //
+        await carregarEstoqueInicial(); 
+        iniciarScanner(); 
+        ajustarCamposPagamento(); 
         exibirLoader(false);
     }
     
-    // O window.onload agora não inicia a câmera, apenas aguarda o clique
     window.onload = () => {
         console.log("Sistema pronto para acesso.");
     };
