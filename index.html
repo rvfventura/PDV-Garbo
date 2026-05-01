@@ -14,6 +14,9 @@
             max-width: 400px; 
             border-radius: 8px;
         }
+
+        /* Classe de utilidade para garantir a troca de telas */
+        .oculto { display: none !important; }
     
         @media (min-width: 768px) {
             .row.g-3 {
@@ -60,9 +63,6 @@
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.8); z-index: 9999; justify-content: center; align-items: center;
         }
-
-        /* Garante que o PDV comece escondido */
-        #conteudoPrincipal { display: none; }
     </style>
 </head>
 <body>
@@ -72,7 +72,7 @@
     <span class="ms-2" id="loaderText">Sincronizando Dados...</span>
 </div>
 
-<!-- Tela de Acesso (Ajustada para Input de Texto) -->
+<!-- Tela de Acesso -->
 <div id="telaAcesso" class="d-flex justify-content-center align-items-center" style="position: fixed; top:0; left:0; width:100%; height:100%; background: #f8f9fa; z-index: 20000;">
     <div class="card shadow-lg p-4 text-center" style="max-width: 400px; width: 90%;">
         <h3 class="mb-4 text-primary">Acesso ao PDV</h3>
@@ -87,8 +87,8 @@
     </div>
 </div>
     
-<!-- Container Principal (ID Adicionado para o JS funcionar) -->
-<div class="container-fluid py-3" id="conteudoPrincipal">
+<!-- Container Principal do PDV (Inicia com a classe oculto) -->
+<div class="container-fluid py-3 oculto" id="conteudoPrincipal">
     <div class="row g-3">
         <!-- Lado Esquerdo: Scanner -->
         <div class="col-12 col-md-6">
@@ -153,7 +153,7 @@
     let scanner;
     let ultimoCodigoLido = "";
     let timestampUltimaLeitura = 0;
-    let vendedorLogado = ""; // Variável global
+    let vendedorLogado = "";
 
     function playBeep() {
         try {
@@ -171,7 +171,6 @@
     }
 
     async function carregarEstoqueInicial() {
-        exibirLoader(true, "Sincronizando Estoque...");
         try {
             const response = await fetch(URL_API, {
                 method: 'POST',
@@ -183,7 +182,6 @@
                 document.getElementById('statusCache').innerText = `Estoque local: ${estoqueLocal.length} produtos.`;
             }
         } catch (e) { console.error("Erro cache:", e); }
-        finally { exibirLoader(false); }
     }
 
     function iniciarScanner() {
@@ -363,16 +361,24 @@
             });
         }
     
-        // 2. Esconde a tela de acesso e mostra o PDV
-        document.getElementById('telaAcesso').style.display = 'none';
-        document.getElementById('conteudoPrincipal').style.display = 'block';
+        // 2. Troca de telas usando classes para evitar conflitos de renderização
+        const telaAcesso = document.getElementById('telaAcesso');
+        const pdvPrincipal = document.getElementById('conteudoPrincipal');
+
+        telaAcesso.classList.add('oculto');
+        pdvPrincipal.classList.remove('oculto');
     
-        // 3. Inicia o hardware
+        // 3. Inicia o hardware e dados
         exibirLoader(true, "Iniciando sistema...");
-        await carregarEstoqueInicial(); 
-        iniciarScanner(); 
-        ajustarCamposPagamento(); 
-        exibirLoader(false);
+        try {
+            await carregarEstoqueInicial(); 
+            iniciarScanner(); 
+            ajustarCamposPagamento(); 
+        } catch (e) {
+            console.error("Erro na inicialização:", e);
+        } finally {
+            exibirLoader(false);
+        }
     }
     
     window.onload = () => {
