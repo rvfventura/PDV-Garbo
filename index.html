@@ -132,7 +132,17 @@
                 <div class="card-body d-flex flex-column p-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="m-0">Carrinho (<span id="qtdItens">0</span>)</h5>
-                        <button class="btn btn-sm btn-outline-danger" onclick="limparCarrinho()">Limpar</button>
+                        <div>
+                            <!-- Novo botão de Atualizar -->
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="carregarEstoqueInicial()" title="Sincronizar Estoque">
+                                🔄 Atualizar
+                            </button>
+                            <!-- Novo botão de Sair -->
+                            <button class="btn btn-sm btn-outline-secondary me-1" onclick="sairDoSistema()">
+                                Sair
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="limparCarrinho()">Limpar</button>
+                        </div>
                     </div>
                     
                     <div id="listaCarrinho" class="carrinho-container"></div>
@@ -203,7 +213,31 @@
         } catch (e) { console.log("Áudio bloqueado."); }
     }
 
+    // Função para deslogar o vendedor e resetar a tela
+    function sairDoSistema() {
+        // 1. Limpa os dados sensíveis
+        vendedorLogado = "";
+        document.getElementById('vendedorAtivo').value = "";
+        carrinho = [];
+        
+        // 2. Reseta a interface do carrinho
+        atualizarInterface();
+        
+        // 3. Sai do modo tela cheia (opcional)
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(err => console.log(err));
+        }
+        
+        // 4. Alterna as telas
+        document.getElementById('conteudoPrincipal').classList.add('oculto');
+        document.getElementById('telaAcesso').classList.remove('oculto');
+        
+        mostrarAviso("Sessão encerrada com sucesso.");
+    }
+    
+    // Atualize sua função de carregar estoque para incluir o aviso de sucesso
     async function carregarEstoqueInicial() {
+        exibirLoader(true, "Sincronizando estoque...");
         try {
             const response = await fetch(URL_API, {
                 method: 'POST',
@@ -212,19 +246,24 @@
             const res = await response.json();
             
             if (res.sucesso) {
-                // O .filter garante que não contaremos linhas sem código de barras
+                // Filtra os itens válidos vindos do código.gs
                 estoqueLocal = res.lista.filter(item => item.codigo && item.codigo.trim() !== "");
                 
                 const totalPecas = estoqueLocal.reduce((acc, item) => {
-                    // Aqui usamos 'quantidade' exatamente como definimos no .gs
                     return acc + (Number(item.quantidade) || 0);
                 }, 0);
     
                 document.getElementById('statusCache').innerText = 
                     `Estoque local: ${totalPecas} peças em ${estoqueLocal.length} modelos.`;
+                
+                // Feedback visual para o vendedor
+                mostrarAviso("Estoque atualizado com sucesso!");
             }
         } catch (e) { 
             console.error("Erro cache:", e); 
+            mostrarAviso("Erro ao conectar com a planilha.", "error");
+        } finally {
+            exibirLoader(false);
         }
     }
     
