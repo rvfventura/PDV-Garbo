@@ -29,7 +29,18 @@
             border-top: 2px solid #dee2e6;
         }
     
-        .item-card { border-left: 4px solid #0d6efd; margin-bottom: 8px; }
+        .item-card { 
+        border-left: 4px solid #0d6efd; 
+        margin-bottom: 4px; /* Espaçamento menor entre itens */
+        padding: 5px 10px !important; /* Diminui o respiro interno */
+        }
+    
+        .item-nome {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis; /* Corta o nome se for muito longo para não quebrar a linha */
+            font-size: 0.9rem;
+        }
     
         .loading-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -226,33 +237,39 @@
         const lista = document.getElementById('listaCarrinho');
         let totalBruto = 0;
         lista.innerHTML = "";
-
+    
         carrinho.forEach((item, idx) => {
             const subtotal = item.preco * item.quantidade;
             totalBruto += subtotal;
             
             lista.innerHTML += `
-                <div class="card item-card shadow-sm p-2 mb-2">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div style="flex: 1;">
-                            <strong class="d-block">${item.nomeCombinado || item.nome}</strong>
-                            <span class="text-muted small">Cod: ${item.codigo} | R$ ${item.preco.toFixed(2)} un.</span>
+                <div class="card item-card shadow-sm">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <!-- Nome do Produto -->
+                        <div class="item-nome" style="flex: 2;">
+                            <strong>${item.nomeCombinado || item.nome}</strong>
                         </div>
-                        <div class="d-flex align-items-center">
-                            <div class="me-3 text-end">
-                                <span class="badge bg-primary rounded-pill">x ${item.quantidade}</span>
-                                <strong class="d-block mt-1">R$ ${subtotal.toFixed(2)}</strong>
-                            </div>
-                            <button class="btn btn-sm btn-outline-danger" onclick="removerUm(${idx})">-1</button>
+                        
+                        <!-- Quantidade e Preço Unitário -->
+                        <div class="text-center" style="flex: 1; font-size: 0.85rem;">
+                            <span class="badge bg-primary">${item.quantidade}x</span>
+                            <span class="text-muted">R$ ${item.preco.toFixed(2)}</span>
+                        </div>
+    
+                        <!-- Subtotal e Botão -->
+                        <div class="d-flex align-items-center justify-content-end" style="flex: 1;">
+                            <strong class="me-2">R$ ${subtotal.toFixed(2)}</strong>
+                            <button class="btn btn-sm btn-outline-danger p-0 px-2" onclick="removerUm(${idx})">
+                                <i class="bi bi-trash">-</i>
+                            </button>
                         </div>
                     </div>
                 </div>`;
         });
-
+    
         const desc = parseFloat(document.getElementById('desconto').value) || 0;
         document.getElementById('totalExibicao').innerText = `R$ ${(totalBruto - desc).toFixed(2)}`;
     }
-
     async function enviarVenda() {
         if (carrinho.length === 0) return alert("Carrinho vazio!");
         
