@@ -163,7 +163,7 @@
 </div>
 
 <script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbyLc8TLlbAMHo9dtHgPqEAo0WFwtkMO5ugDkzVJIKoz8kfWuwQb3Thdt8og5q6LenkMig/exec"; 
+    const URL_API = "https://script.google.com/macros/s/AKfycbwlrF8g7m9J44QRzPDMPbLeZcAT6nLL1i0lR4RcCZIZ0_rCdYedrwpLPkOLOAXb1sLe/exec"; 
     let carrinho = [];
     let estoqueLocal = [];
     let scanner;
@@ -212,22 +212,22 @@
             const res = await response.json();
             
             if (res.sucesso) {
-                // FILTRO: Remove linhas onde o código está em branco ou nulo
-                estoqueLocal = res.lista.filter(item => item.codigo && item.codigo.toString().trim() !== "");
+                // O .filter garante que não contaremos linhas sem código de barras
+                estoqueLocal = res.lista.filter(item => item.codigo && item.codigo.trim() !== "");
                 
                 const totalPecas = estoqueLocal.reduce((acc, item) => {
-                    const qtd = parseFloat(item.quantidade) || 0;
-                    return acc + qtd;
+                    // Aqui usamos 'quantidade' exatamente como definimos no .gs
+                    return acc + (Number(item.quantidade) || 0);
                 }, 0);
     
-                document.getElementById('statusCache').innerText = `Estoque local: ${totalPecas} peças em ${estoqueLocal.length} modelos.`;
+                document.getElementById('statusCache').innerText = 
+                    `Estoque local: ${totalPecas} peças em ${estoqueLocal.length} modelos.`;
             }
         } catch (e) { 
             console.error("Erro cache:", e); 
-            mostrarAviso("Erro ao sincronizar estoque real.", 'error');
         }
     }
-
+    
     function iniciarScanner() {
         scanner = new Html5Qrcode("reader");
         const config = { fps: 15, qrbox: { width: 250, height: 250 } };
