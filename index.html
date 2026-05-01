@@ -216,7 +216,7 @@
                 // NOVA LÓGICA: Soma a quantidade de cada item em vez de contar linhas
                 // Considera 'estoque_atual' como o nome da coluna vinda da planilha
                 const totalPecas = estoqueLocal.reduce((acc, item) => {
-                    const qtd = parseFloat(item.estoque_atual) || 0;
+                    const qtd = parseFloat(item.quantidade) || 0;
                     return acc + qtd;
                 }, 0);
     
