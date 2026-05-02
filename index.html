@@ -326,10 +326,9 @@
     window.descontoGlobal = 0;
     
     function abrirModalDesconto() {
-        // Em vez de prompt, mostramos o nosso modal HTML
-        document.getElementById('inputValorDesconto').value = (descontoGlobal * 100).toFixed(0);
+        // Resetamos o campo para vazio para facilitar a digitação do zero
+        document.getElementById('inputValorDesconto').value = ""; 
         document.getElementById('modalDesconto').classList.remove('oculto');
-        document.getElementById('inputValorDesconto').focus();
     }
     
     function fecharModalDesconto() {
@@ -338,7 +337,9 @@
     
     function confirmarDesconto() {
         const campo = document.getElementById('inputValorDesconto');
-        const valorNumerico = parseFloat(campo.value);
+        // Se o campo estiver vazio, assume 0
+        const valorTexto = campo.value === "" ? "0" : campo.value;
+        const valorNumerico = parseFloat(valorTexto);
     
         if (!isNaN(valorNumerico) && valorNumerico >= 0 && valorNumerico <= 100) {
             window.descontoGlobal = valorNumerico / 100;
@@ -346,7 +347,6 @@
             window.descontoGlobal = 0;
         }
         
-        campo.value = ""; // Limpa para a próxima vez
         atualizarInterface();
         fecharModalDesconto();
     }
@@ -354,14 +354,23 @@
     function digitarModal(num) {
         const campo = document.getElementById('inputValorDesconto');
         
-        // Se o campo estiver vazio e digitar 0, não faz nada
-        if (campo.value === "" && num === '0') return;
-        
-        const novoValor = campo.value + num;
-        
-        // Impede que o desconto passe de 100
-        if (parseInt(novoValor) <= 100) {
-            campo.value = novoValor;
+        // Se o usuário digitar '0' e o campo estiver vazio ou já for '0', ignora
+        if (num === '0' && (campo.value === "" || campo.value === "0")) {
+            campo.value = "0";
+            return;
+        }
+    
+        // Se o campo for "0" e ele digitar qualquer outro número, substitui o 0
+        if (campo.value === "0" && num !== "0") {
+            campo.value = num;
+        } else {
+            // Caso contrário, concatena normalmente
+            const novoValor = campo.value + num;
+            
+            // Impede que o desconto passe de 100
+            if (parseInt(novoValor) <= 100) {
+                campo.value = novoValor;
+            }
         }
     }
     
