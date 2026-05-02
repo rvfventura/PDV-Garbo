@@ -337,9 +337,8 @@
     }
     
     function confirmarDesconto() {
-        const campoInput = document.getElementById('inputValorDesconto');
-        const entrada = campoInput.value;
-        const valorNumerico = parseFloat(entrada.replace(',', '.'));
+        const campo = document.getElementById('inputValorDesconto');
+        const valorNumerico = parseFloat(campo.value);
     
         if (!isNaN(valorNumerico) && valorNumerico >= 0 && valorNumerico <= 100) {
             window.descontoGlobal = valorNumerico / 100;
@@ -347,18 +346,22 @@
             window.descontoGlobal = 0;
         }
         
-        // Limpa o campo para a próxima abertura não vir com lixo
-        campoInput.value = ""; 
-        
-        atualizarInterface(); 
+        campo.value = ""; // Limpa para a próxima vez
+        atualizarInterface();
         fecharModalDesconto();
     }
 
     function digitarModal(num) {
         const campo = document.getElementById('inputValorDesconto');
-        // Impede que o desconto passe de 100%
-        if ((campo.value + num) <= 100) {
-            campo.value += num;
+        
+        // Se o campo estiver vazio e digitar 0, não faz nada
+        if (campo.value === "" && num === '0') return;
+        
+        const novoValor = campo.value + num;
+        
+        // Impede que o desconto passe de 100
+        if (parseInt(novoValor) <= 100) {
+            campo.value = novoValor;
         }
     }
     
@@ -434,7 +437,7 @@
             dados: {
                 venda: {
                     pagamento: metodo,
-                    desconto: (descontoGlobal * 100).toFixed(2) + "%", // Envia formatado como string
+                    desconto: descontoGlobal,
                     parcelas: textoParcelas,
                     vendedor: vendedorLogado
                 },
