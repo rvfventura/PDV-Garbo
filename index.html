@@ -668,7 +668,13 @@
         }
     });
     
-    window.onload = () => { console.log("Sistema pronto."); };
+    window.onload = () => { 
+        console.log("Sistema pronto."); 
+        // Comente as linhas abaixo quando terminar os testes:
+        vendedorLogado = "Teste";
+        document.getElementById('telaAcesso').classList.add('oculto');
+        document.getElementById('conteudoPrincipal').classList.remove('oculto');
+    };
 
 // Funções para a tela de cadastro
 
