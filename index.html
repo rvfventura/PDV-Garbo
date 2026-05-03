@@ -254,12 +254,19 @@
                             </div>
                             <div class="col-12">
                                 <label class="small fw-bold d-block">Tamanhos</label>
-                                <div class="btn-group btn-group-sm w-100" id="grupoTamanhos">
+                                <div class="btn-group btn-group-sm w-100 mb-2" id="grupoTamanhos">
                                     <input type="checkbox" class="btn-check" id="tP" value="P"> <label class="btn btn-outline-primary" for="tP">P</label>
                                     <input type="checkbox" class="btn-check" id="tM" value="M"> <label class="btn btn-outline-primary" for="tM">M</label>
                                     <input type="checkbox" class="btn-check" id="tG" value="G"> <label class="btn btn-outline-primary" for="tG">G</label>
                                     <input type="checkbox" class="btn-check" id="tGG" value="GG"> <label class="btn btn-outline-primary" for="tGG">GG</label>
-                                    <input type="checkbox" class="btn-check" id="tU" value="U" checked> <label class="btn btn-outline-primary" for="tU">U</label>
+                                    <input type="checkbox" class="btn-check" id="tU" value="U"> <label class="btn btn-outline-primary" for="tU">U</label>
+                                    <!-- Novo botão Outros -->
+                                    <input type="checkbox" class="btn-check" id="tOutros" value="OUTROS" onchange="toggleTamanhoManual()"> 
+                                    <label class="btn btn-outline-secondary" for="tOutros">Outros</label>
+                                </div>
+                                <!-- Campo numérico manual, escondido por padrão -->
+                                <div id="containerTamanhoManual" class="oculto">
+                                    <input type="text" id="cadTamanhoManual" class="form-control form-control-sm" placeholder="Digite o número (ex: 42)">
                                 </div>
                             </div>
                             <div class="col-12 mt-3">
@@ -725,25 +732,40 @@
     // Esta é a função que automatiza a criação do código baseado na sua regra de negócio
     let listaVariaçõesTemp = [];
 
+    // Função para mostrar/esconder o campo de texto
+    function toggleTamanhoManual() {
+        const isChecked = document.getElementById('tOutros').checked;
+        const container = document.getElementById('containerTamanhoManual');
+        container.classList.toggle('oculto', !isChecked);
+        if(isChecked) document.getElementById('cadTamanhoManual').focus();
+    }
+    
+    // Atualize sua função de adicionar na lista para ler o campo manual
     function adicionarVariacaoNaLista() {
         const tipo = document.getElementById('cadTipo').value.trim().toUpperCase();
         const nome = document.getElementById('cadNome').value.trim().toUpperCase();
         const cor = document.getElementById('cadCor').value.trim().toUpperCase();
         const preco = document.getElementById('cadPreco').value;
         const checks = document.querySelectorAll('#grupoTamanhos input:checked');
+        const manualTam = document.getElementById('cadTamanhoManual').value.trim().toUpperCase();
     
         if (!tipo || !nome || !cor || !preco || checks.length === 0) {
-            return mostrarAviso("Preencha todos os campos e selecione os tamanhos!", "error");
+            return mostrarAviso("Preencha todos os campos!", "error");
         }
     
         checks.forEach(check => {
-            const tam = check.value;
-            // Metrologia do Código: 2 letras Tipo + 3 Nome + 3 Cor + Tamanho
+            let tam = check.value;
+            
+            // Se for "OUTROS", usa o valor do campo manual
+            if (tam === "OUTROS") {
+                if (!manualTam) return; // Pula se selecionou outros mas não digitou nada
+                tam = manualTam;
+            }
+    
             const cod = tipo.substring(0, 2).padEnd(2, 'X') +
                         nome.substring(0, 3).padEnd(3, 'X') +
                         cor.substring(0, 3).padEnd(3, 'X') + tam;
     
-            // Evitar duplicados na lista temporária
             if (!listaVariaçõesTemp.some(item => item.codigo === cod)) {
                 listaVariaçõesTemp.push({
                     codigo: cod,
@@ -754,8 +776,9 @@
         });
     
         renderizarListaPreview();
-        // Limpa apenas campos de cor e tamanho para próxima entrada do mesmo modelo
+        // Limpeza inteligente
         document.getElementById('cadCor').value = "";
+        document.getElementById('cadTamanhoManual').value = "";
         document.getElementById('cadCor').focus();
     }
     
