@@ -291,6 +291,7 @@
                                     <th>CÓDIGO</th>
                                     <th>DESCRIÇÃO</th>
                                     <th>PREÇO</th>
+                                    <th style="width: 80px;">QTD</th> <!-- Ajustado para caber o input -->
                                     <th>AÇÃO</th>
                                 </tr>
                             </thead>
@@ -789,10 +790,17 @@
     
         listaVariaçõesTemp.forEach((item, index) => {
             tbody.innerHTML += `
-                <tr>
+                <tr class="align-middle">
                     <td class="fw-bold text-primary">${item.codigo}</td>
                     <td>${item.descricao}</td>
                     <td>R$ ${item.preco.toFixed(2)}</td>
+                    <td>
+                        <input type="number" 
+                               class="form-control form-control-sm fw-bold text-center" 
+                               value="${item.quantidade}" 
+                               min="1" 
+                               onchange="atualizarQtdVariação(${index}, this.value)">
+                    </td>
                     <td class="text-center">
                         <button class="btn btn-sm btn-outline-danger border-0" onclick="removerItemVariacao(${index})">✕</button>
                     </td>
@@ -800,6 +808,17 @@
         });
     
         btnFinal.disabled = listaVariaçõesTemp.length === 0;
+    }
+    
+    // Função para garantir que a mudança no campo reflita nos dados que serão enviados
+    function atualizarQtdVariação(index, novaQtd) {
+        const valor = parseInt(novaQtd);
+        if (valor > 0) {
+            listaVariaçõesTemp[index].quantidade = valor;
+        } else {
+            listaVariaçõesTemp[index].quantidade = 1; // Mínimo aceitável
+            renderizarListaPreview(); // Força o reset visual do campo
+        }
     }
     
     function removerItemVariacao(index) {
