@@ -242,36 +242,32 @@
                     </div>
 
                     <!-- Entrada de Cor e Preço -->
-                    <div id="areaEntradaVariação" class="p-2 border rounded">
-                        <div class="row g-2 align-items-end">
-                            <div class="col-7">
-                                <label class="small fw-bold">Cor</label>
-                                <input type="text" id="cadCor" class="form-control form-control-sm text-uppercase" placeholder="Preto">
-                            </div>
-                            <div class="col-5">
-                                <label class="small fw-bold">Preço (R$)</label>
-                                <input type="number" id="cadPreco" class="form-control form-control-sm" placeholder="0.00">
+                    <div id="areaEntradaVariação" class="p-3 border rounded bg-light">
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="small fw-bold text-muted">Cor</label>
+                                <input type="text" id="cadCor" class="form-control text-uppercase" placeholder="Ex: AZUL MARINHO">
                             </div>
                             <div class="col-12">
-                                <label class="small fw-bold d-block">Tamanhos</label>
-                                <div class="btn-group btn-group-sm w-100 mb-2" id="grupoTamanhos">
+                                <label class="small fw-bold text-muted">Preço Unitário (R$)</label>
+                                <input type="number" id="cadPreco" class="form-control" placeholder="0.00" step="0.01">
+                            </div>
+                            <div class="col-12 mt-2">
+                                <label class="small fw-bold d-block mb-1">Selecione os Tamanhos:</label>
+                                <div class="btn-group btn-group-sm w-100" id="grupoTamanhos">
                                     <input type="checkbox" class="btn-check" id="tP" value="P"> <label class="btn btn-outline-primary" for="tP">P</label>
                                     <input type="checkbox" class="btn-check" id="tM" value="M"> <label class="btn btn-outline-primary" for="tM">M</label>
                                     <input type="checkbox" class="btn-check" id="tG" value="G"> <label class="btn btn-outline-primary" for="tG">G</label>
                                     <input type="checkbox" class="btn-check" id="tGG" value="GG"> <label class="btn btn-outline-primary" for="tGG">GG</label>
                                     <input type="checkbox" class="btn-check" id="tU" value="U"> <label class="btn btn-outline-primary" for="tU">U</label>
-                                    <!-- Novo botão Outros -->
-                                    <input type="checkbox" class="btn-check" id="tOutros" value="OUTROS" onchange="toggleTamanhoManual()"> 
-                                    <label class="btn btn-outline-secondary" for="tOutros">Outros</label>
                                 </div>
-                                <!-- Campo numérico manual, escondido por padrão -->
-                                <div id="containerTamanhoManual" class="oculto">
-                                    <input type="text" id="cadTamanhoManual" class="form-control form-control-sm" placeholder="Digite o número (ex: 42)">
+                                <div class="input-group input-group-sm mt-2">
+                                    <input type="text" id="cadTamanhoManual" class="form-control" placeholder="Outro (ex: 42)">
                                 </div>
                             </div>
                             <div class="col-12 mt-3">
-                                <button class="btn btn-primary w-100 fw-bold" onclick="adicionarVariacaoNaLista()">
-                                    ⚡ MONTAR VARIAÇÕES
+                                <button class="btn btn-primary w-100 fw-bold shadow-sm" onclick="adicionarVariacaoNaLista()">
+                                    ⚡ MONTAR GRADE (QTD 1)
                                 </button>
                             </div>
                         </div>
@@ -285,20 +281,22 @@
                         <button class="btn btn-sm btn-link text-danger p-0" onclick="limparListaVariações()">Limpar Tudo</button>
                     </div>
                     <div style="max-height: 300px; overflow-y: auto;" class="border rounded bg-white">
-                        <table class="table table-sm table-hover mb-0">
-                            <thead class="table-dark sticky-top">
-                                <tr style="font-size: 0.75rem;">
-                                    <th>CÓDIGO</th>
-                                    <th>DESCRIÇÃO</th>
-                                    <th>PREÇO</th>
-                                    <th style="width: 80px;">QTD</th> <!-- Ajustado para caber o input -->
-                                    <th>AÇÃO</th>
-                                </tr>
-                            </thead>
-                            <tbody id="listaPreview" style="font-size: 0.85rem;">
-                                <!-- Gerado dinamicamente -->
-                            </tbody>
-                        </table>
+                        <div class="table-responsive border rounded bg-white" style="max-height: 400px;">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th class="ps-3">CÓDIGO</th>
+                                        <th>DESCRIÇÃO</th>
+                                        <th>PREÇO</th>
+                                        <th style="width: 100px;">QTD REAL</th>
+                                        <th class="text-center">AÇÃO</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="listaPreview">
+                                    <!-- Linhas geradas via JS -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                     <div class="mt-3">
                         <button id="btnCadastrarFinal" class="btn btn-success w-100 btn-lg fw-bold" onclick="enviarTudoParaEstoque()" disabled>
@@ -732,55 +730,44 @@
     
     // Esta é a função que automatiza a criação do código baseado na sua regra de negócio
     let listaVariaçõesTemp = [];
-
-    // Função para mostrar/esconder o campo de texto
-    function toggleTamanhoManual() {
-        const isChecked = document.getElementById('tOutros').checked;
-        const container = document.getElementById('containerTamanhoManual');
-        container.classList.toggle('oculto', !isChecked);
-        if(isChecked) document.getElementById('cadTamanhoManual').focus();
-    }
     
-    // Atualize sua função de adicionar na lista para ler o campo manual
     function adicionarVariacaoNaLista() {
         const tipo = document.getElementById('cadTipo').value.trim().toUpperCase();
         const nome = document.getElementById('cadNome').value.trim().toUpperCase();
         const cor = document.getElementById('cadCor').value.trim().toUpperCase();
         const preco = document.getElementById('cadPreco').value;
+        
+        // Captura os tamanhos selecionados nos checkboxes
         const checks = document.querySelectorAll('#grupoTamanhos input:checked');
         const manualTam = document.getElementById('cadTamanhoManual').value.trim().toUpperCase();
     
-        if (!tipo || !nome || !cor || !preco || checks.length === 0) {
-            return mostrarAviso("Preencha todos os campos!", "error");
+        if (!tipo || !nome || !cor || !preco || (checks.length === 0 && !manualTam)) {
+            return mostrarAviso("Preencha Modelo, Cor, Preço e selecione ao menos um tamanho!", "error");
         }
     
-        checks.forEach(check => {
-            let tam = check.value;
-            
-            // Se for "OUTROS", usa o valor do campo manual
-            if (tam === "OUTROS") {
-                if (!manualTam) return; // Pula se selecionou outros mas não digitou nada
-                tam = manualTam;
-            }
+        // Coleta os tamanhos selecionados
+        let tamanhosParaAdicionar = Array.from(checks).map(c => c.value);
+        if (manualTam) tamanhosParaAdicionar.push(manualTam);
     
+        tamanhosParaAdicionar.forEach(tam => {
+            // Lógica Metrológica: 2 Letras Tipo + 3 Nome + 3 Cor + Tamanho
             const cod = tipo.substring(0, 2).padEnd(2, 'X') +
                         nome.substring(0, 3).padEnd(3, 'X') +
                         cor.substring(0, 3).padEnd(3, 'X') + tam;
     
+            // Evita duplicados na mesma sessão de montagem
             if (!listaVariaçõesTemp.some(item => item.codigo === cod)) {
                 listaVariaçõesTemp.push({
                     codigo: cod,
                     descricao: `${tipo} ${nome} ${cor} ${tam}`,
-                    preco: parseFloat(preco)
+                    preco: parseFloat(preco),
+                    quantidade: 1 // Quantidade padrão inicial
                 });
             }
         });
     
         renderizarListaPreview();
-        // Limpeza inteligente
-        document.getElementById('cadCor').value = "";
-        document.getElementById('cadTamanhoManual').value = "";
-        document.getElementById('cadCor').focus();
+        resetarCamposParcial();
     }
     
     function renderizarListaPreview() {
@@ -791,18 +778,20 @@
         listaVariaçõesTemp.forEach((item, index) => {
             tbody.innerHTML += `
                 <tr class="align-middle">
-                    <td class="fw-bold text-primary">${item.codigo}</td>
-                    <td>${item.descricao}</td>
-                    <td>R$ ${item.preco.toFixed(2)}</td>
+                    <td class="ps-3 fw-bold text-primary">${item.codigo}</td>
+                    <td class="small">${item.descricao}</td>
+                    <td class="small">R$ ${item.preco.toFixed(2)}</td>
                     <td>
                         <input type="number" 
-                               class="form-control form-control-sm fw-bold text-center" 
+                               class="form-control form-control-sm text-center fw-bold border-primary" 
                                value="${item.quantidade}" 
-                               min="1" 
-                               onchange="atualizarQtdVariação(${index}, this.value)">
+                               min="1"
+                               onchange="atualizarQtdMemoria(${index}, this.value)">
                     </td>
                     <td class="text-center">
-                        <button class="btn btn-sm btn-outline-danger border-0" onclick="removerItemVariacao(${index})">✕</button>
+                        <button class="btn btn-sm text-danger" onclick="removerItemVariacao(${index})">
+                            <i class="bi bi-trash"></i> ✕
+                        </button>
                     </td>
                 </tr>`;
         });
@@ -810,15 +799,23 @@
         btnFinal.disabled = listaVariaçõesTemp.length === 0;
     }
     
-    // Função para garantir que a mudança no campo reflita nos dados que serão enviados
-    function atualizarQtdVariação(index, novaQtd) {
-        const valor = parseInt(novaQtd);
-        if (valor > 0) {
-            listaVariaçõesTemp[index].quantidade = valor;
+    // ATUALIZAÇÃO EM TEMPO REAL: Altera o valor no array quando você digita na tabela
+    function atualizarQtdMemoria(index, novoValor) {
+        const qtd = parseInt(novoValor);
+        if (qtd > 0) {
+            listaVariaçõesTemp[index].quantidade = qtd;
         } else {
-            listaVariaçõesTemp[index].quantidade = 1; // Mínimo aceitável
-            renderizarListaPreview(); // Força o reset visual do campo
+            listaVariaçõesTemp[index].quantidade = 1;
+            renderizarListaPreview(); // Reset visual para 1
         }
+    }
+    
+    function resetarCamposParcial() {
+        // Limpa Cor, Tamanhos e Manual para a próxima cor do mesmo modelo
+        document.getElementById('cadCor').value = "";
+        document.getElementById('cadTamanhoManual').value = "";
+        document.querySelectorAll('#grupoTamanhos input').forEach(c => c.checked = false);
+        document.getElementById('cadCor').focus();
     }
     
     function removerItemVariacao(index) {
