@@ -216,51 +216,89 @@
     </div>
 </div>
 <!-- View 2: Cadastro de Produtos -->
-<div id="viewCadastro" class="secao-admin container mt-3">
-    <div class="card shadow-sm p-4">
-        <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-            <h3 class="text-primary">📦 Cadastro de Modelo</h3>
-            <button class="btn btn-outline-secondary" onclick="mudarTela('viewPDV')">Voltar</button>
+<div id="viewCadastro" class="secao-admin container-fluid mt-2">
+    <div class="card shadow-sm border-0">
+        <!-- Cabeçalho Fixo -->
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+            <h5 class="mb-0 text-primary fw-bold">📦 Novo Modelo</h5>
+            <button class="btn btn-sm btn-outline-secondary" onclick="mudarTela('viewPDV')">Sair</button>
         </div>
 
-        <!-- Parte 1: Dados do Modelo -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-6">
-                <label class="form-label fw-bold">Tipo (Ex: Blusa, Calça)</label>
-                <input type="text" id="cadTipo" class="form-control" placeholder="Ex: BLUSA" oninput="sincronizarGrade()">
+        <div class="card-body p-2">
+            <div class="row g-2">
+                <!-- Coluna Esquerda: Definição (Fica visível no topo) -->
+                <div class="col-md-5 border-end">
+                    <div class="p-2 bg-light rounded mb-2">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="small fw-bold">Tipo</label>
+                                <input type="text" id="cadTipo" class="form-control form-control-sm text-uppercase" placeholder="Blusa">
+                            </div>
+                            <div class="col-6">
+                                <label class="small fw-bold">Nome</label>
+                                <input type="text" id="cadNome" class="form-control form-control-sm text-uppercase" placeholder="Lurex">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Entrada de Cor e Preço -->
+                    <div id="areaEntradaVariação" class="p-2 border rounded">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-7">
+                                <label class="small fw-bold">Cor</label>
+                                <input type="text" id="cadCor" class="form-control form-control-sm text-uppercase" placeholder="Preto">
+                            </div>
+                            <div class="col-5">
+                                <label class="small fw-bold">Preço (R$)</label>
+                                <input type="number" id="cadPreco" class="form-control form-control-sm" placeholder="0.00">
+                            </div>
+                            <div class="col-12">
+                                <label class="small fw-bold d-block">Tamanhos</label>
+                                <div class="btn-group btn-group-sm w-100" id="grupoTamanhos">
+                                    <input type="checkbox" class="btn-check" id="tP" value="P"> <label class="btn btn-outline-primary" for="tP">P</label>
+                                    <input type="checkbox" class="btn-check" id="tM" value="M"> <label class="btn btn-outline-primary" for="tM">M</label>
+                                    <input type="checkbox" class="btn-check" id="tG" value="G"> <label class="btn btn-outline-primary" for="tG">G</label>
+                                    <input type="checkbox" class="btn-check" id="tGG" value="GG"> <label class="btn btn-outline-primary" for="tGG">GG</label>
+                                    <input type="checkbox" class="btn-check" id="tU" value="U" checked> <label class="btn btn-outline-primary" for="tU">U</label>
+                                </div>
+                            </div>
+                            <div class="col-12 mt-3">
+                                <button class="btn btn-primary w-100 fw-bold" onclick="adicionarVariacaoNaLista()">
+                                    ⚡ MONTAR VARIAÇÕES
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coluna Direita: Lista de Variações Geradas (A "Matriz") -->
+                <div class="col-md-7">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small fw-bold">Lista de Variações Geradas:</span>
+                        <button class="btn btn-sm btn-link text-danger p-0" onclick="limparListaVariações()">Limpar Tudo</button>
+                    </div>
+                    <div style="max-height: 300px; overflow-y: auto;" class="border rounded bg-white">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-dark sticky-top">
+                                <tr style="font-size: 0.75rem;">
+                                    <th>CÓDIGO</th>
+                                    <th>DESCRIÇÃO</th>
+                                    <th>PREÇO</th>
+                                    <th>AÇÃO</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listaPreview" style="font-size: 0.85rem;">
+                                <!-- Gerado dinamicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-3">
+                        <button id="btnCadastrarFinal" class="btn btn-success w-100 btn-lg fw-bold" onclick="enviarTudoParaEstoque()" disabled>
+                            CONFIRMAR E CADASTRAR NO SISTEMA
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-6">
-                <label class="form-label fw-bold">Nome do Modelo</label>
-                <input type="text" id="cadNome" class="form-control" placeholder="Ex: LUREX" oninput="sincronizarGrade()">
-            </div>
-        </div>
-
-        <!-- Parte 2: Grade de Variações -->
-        <h5 class="fw-bold mb-3">Cores e Tamanhos</h5>
-        <div class="table-responsive">
-            <table class="table table-bordered align-middle">
-                <thead class="table-light text-center">
-                    <tr>
-                        <th style="width: 200px;">Cor</th>
-                        <th>Tamanhos (Marque os disponíveis)</th>
-                        <th style="width: 150px;">Preço Sugerido</th>
-                        <th>Ação</th>
-                    </tr>
-                </thead>
-                <tbody id="corpoGrade">
-                    <!-- Linhas inseridas via JS -->
-                </tbody>
-            </table>
-        </div>
-        
-        <button class="btn btn-outline-primary mb-4" onclick="adicionarLinhaCor()">
-            + Adicionar Nova Cor
-        </button>
-
-        <div class="d-grid">
-            <button class="btn btn-success btn-lg py-3 fw-bold" onclick="revisarECadastrar()">
-                CADASTRAR TUDO NO ESTOQUE 🚀
-            </button>
         </div>
     </div>
 </div>
@@ -685,104 +723,79 @@
     }
     
     // Esta é a função que automatiza a criação do código baseado na sua regra de negócio
-    function gerarLogicaCampos() {
+    let listaVariaçõesTemp = [];
+
+    function adicionarVariacaoNaLista() {
         const tipo = document.getElementById('cadTipo').value.trim().toUpperCase();
         const nome = document.getElementById('cadNome').value.trim().toUpperCase();
         const cor = document.getElementById('cadCor').value.trim().toUpperCase();
-        const tamanho = document.getElementById('cadTamanho').value;
+        const preco = document.getElementById('cadPreco').value;
+        const checks = document.querySelectorAll('#grupoTamanhos input:checked');
     
-        // Lógica: 2 Tipo + 3 Nome + 3 Cor + Tamanho
-        const parteTipo = tipo.substring(0, 2).padEnd(2, 'X');
-        const parteNome = nome.substring(0, 3).padEnd(3, 'X');
-        const parteCor = cor.substring(0, 3).padEnd(3, 'X');
-        
-        const codigoFinal = parteTipo + parteNome + parteCor + tamanho;
-        
-        document.getElementById('cadCodigo').value = codigoFinal;
-        document.getElementById('cadNomeCombinado').value = `${tipo} ${nome} ${cor}`.trim();
-    }
-
-    // Lista de tamanhos padrão da sua loja
-    const TAMANHOS_PADRAO = ['P', 'M', 'G', 'GG', 'U'];
+        if (!tipo || !nome || !cor || !preco || checks.length === 0) {
+            return mostrarAviso("Preencha todos os campos e selecione os tamanhos!", "error");
+        }
     
-    function adicionarLinhaCor() {
-        const tbody = document.getElementById('corpoGrade');
-        const tr = document.createElement('tr');
-        
-        // Gerar checkboxes de tamanhos
-        let htmlTamanhos = '<div class="d-flex flex-wrap gap-2 justify-content-center">';
-        TAMANHOS_PADRAO.forEach(t => {
-            htmlTamanhos += `
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input check-tamanho" type="checkbox" value="${t}" onchange="sincronizarGrade()">
-                    <label class="form-check-label small fw-bold">${t}</label>
-                </div>`;
-        });
-        htmlTamanhos += '</div>';
+        checks.forEach(check => {
+            const tam = check.value;
+            // Metrologia do Código: 2 letras Tipo + 3 Nome + 3 Cor + Tamanho
+            const cod = tipo.substring(0, 2).padEnd(2, 'X') +
+                        nome.substring(0, 3).padEnd(3, 'X') +
+                        cor.substring(0, 3).padEnd(3, 'X') + tam;
     
-        tr.innerHTML = `
-            <td>
-                <input type="text" class="form-control input-cor" placeholder="Ex: PRETO" oninput="sincronizarGrade()">
-            </td>
-            <td>${htmlTamanhos}</td>
-            <td>
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text">R$</span>
-                    <input type="number" class="form-control input-preco" placeholder="0,00" step="0.01">
-                </div>
-            </td>
-            <td class="text-center">
-                <button class="btn btn-sm btn-danger" onclick="this.closest('tr').remove(); sincronizarGrade();">✕</button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    }
-    
-    // Função para processar os dados e gerar a lista final de códigos (Metrologia Têxtil)
-    function processarGrade() {
-        const tipo = document.getElementById('cadTipo').value.trim().toUpperCase();
-        const nome = document.getElementById('cadNome').value.trim().toUpperCase();
-        const linhas = document.querySelectorAll('#corpoGrade tr');
-        
-        let produtosParaCadastrar = [];
-    
-        linhas.forEach(linha => {
-            const cor = linha.querySelector('.input-cor').value.trim().toUpperCase();
-            const preco = linha.querySelector('.input-preco').value;
-            const checks = linha.querySelectorAll('.check-tamanho:checked');
-    
-            checks.forEach(check => {
-                const tam = check.value;
-                // Sua lógica: 2 Tipo + 3 Nome + 3 Cor + Tamanho
-                const cod = tipo.substring(0,2).padEnd(2,'X') + 
-                            nome.substring(0,3).padEnd(3,'X') + 
-                            cor.substring(0,3).padEnd(3,'X') + tam;
-                
-                produtosParaCadastrar.push({
+            // Evitar duplicados na lista temporária
+            if (!listaVariaçõesTemp.some(item => item.codigo === cod)) {
+                listaVariaçõesTemp.push({
                     codigo: cod,
-                    nome: `${tipo} ${nome} ${cor} ${tam}`,
-                    preco: parseFloat(preco) || 0,
-                    quantidade: 0 // Inicia zerado para o inventário posterior
+                    descricao: `${tipo} ${nome} ${cor} ${tam}`,
+                    preco: parseFloat(preco)
                 });
-            });
+            }
         });
     
-        return produtosParaCadastrar;
+        renderizarListaPreview();
+        // Limpa apenas campos de cor e tamanho para próxima entrada do mesmo modelo
+        document.getElementById('cadCor').value = "";
+        document.getElementById('cadCor').focus();
     }
     
-    function revisarECadastrar() {
-        const lista = processarGrade();
-        if (lista.length === 0) return mostrarAviso("Preencha ao menos uma cor e um tamanho!", "error");
-        
-        console.log("Enviando para o Sheets:", lista);
-        mostrarAviso(`Preparado para cadastrar ${lista.length} variações!`, "success");
-        // Aqui faremos o fetch para o backend depois
+    function renderizarListaPreview() {
+        const tbody = document.getElementById('listaPreview');
+        const btnFinal = document.getElementById('btnCadastrarFinal');
+        tbody.innerHTML = "";
+    
+        listaVariaçõesTemp.forEach((item, index) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td class="fw-bold text-primary">${item.codigo}</td>
+                    <td>${item.descricao}</td>
+                    <td>R$ ${item.preco.toFixed(2)}</td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-danger border-0" onclick="removerItemVariacao(${index})">✕</button>
+                    </td>
+                </tr>`;
+        });
+    
+        btnFinal.disabled = listaVariaçõesTemp.length === 0;
     }
     
-    // Inicia com uma linha em branco ao carregar
-    document.addEventListener('DOMContentLoaded', () => {
-        if(document.getElementById('corpoGrade')) adicionarLinhaCor();
-    });
+    function removerItemVariacao(index) {
+        listaVariaçõesTemp.splice(index, 1);
+        renderizarListaPreview();
+    }
+    
+    function limparListaVariações() {
+        listaVariaçõesTemp = [];
+        renderizarListaPreview();
+    }
+    
+    function enviarTudoParaEstoque() {
+        // Aqui entrará o fetch para o seu Google Apps Script posterior
+        console.log("Produtos para enviar:", listaVariaçõesTemp);
+        mostrarAviso(`${listaVariaçõesTemp.length} produtos enviados com sucesso!`, "success");
+        limparListaVariações();
+        mudarTela('viewPDV');
+    }
 </script>
 
 <!-- Modal de Desconto Personalizado -->
