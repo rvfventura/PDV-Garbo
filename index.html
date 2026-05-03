@@ -676,50 +676,35 @@
         document.getElementById('conteudoPrincipal').classList.remove('oculto');
     };
 
-// Funções para a tela de cadastro
-
-    function gerarLogicaCampos() {
-        const tipo = document.getElementById('cadTipo').value.trim().toUpperCase();
-        const nome = document.getElementById('cadNome').value.trim().toUpperCase();
-        const cor = document.getElementById('cadCor').value.trim().toUpperCase();
-        const tamanho = document.getElementById('cadTamanho').value;
+// --- NOVAS FUNÇÕES PARA ADMINISTRAÇÃO E CADASTRO ---
     
-        // Lógica do Código: 2 Tipo + 3 Nome + 3 Cor + Tamanho
-        const parteTipo = tipo.substring(0, 2);
-        const parteNome = nome.substring(0, 3);
-        const parteCor = cor.substring(0, 3);
-        
-        const codigoFinal = parteTipo + parteNome + parteCor + tamanho;
-        document.getElementById('cadCodigo').value = codigoFinal;
-    
-        // Nome Combinado: TIPO NOME COR
-        document.getElementById('cadNomeCombinado').value = `${tipo} ${nome} ${cor}`;
-    }
-
-    // Defina o PIN no topo do script
     const PIN_MESTRE = "1234"; 
     
     function solicitarAcessoAdmin() {
-        // Usamos o prompt nativo para teste rápido
         const pin = prompt("Digite o PIN de administrador:");
-        
         if (pin === PIN_MESTRE) {
-            // Se o PIN estiver correto, trocamos as views
-            document.getElementById('viewPDV').classList.add('oculto');
-            document.getElementById('viewCadastro').classList.remove('oculto');
-            mostrarAviso("Acesso Administrativo Liberado", "success");
+            const escolha = confirm("OK! Deseja ir para o CADASTRO?\n(Clique em Cancelar para INVENTÁRIO)");
+            if (escolha) mudarTela('viewCadastro');
+            else mudarTela('viewInventario');
         } else if (pin !== null) {
             mostrarAviso("PIN Incorreto!", "error");
         }
     }
     
-    function voltarParaPDV() {
-        document.getElementById('viewCadastro').classList.add('oculto');
-        document.getElementById('viewPDV').classList.remove('oculto');
-        setTimeout(() => document.getElementById('manualInput').focus(), 500);
+    function mudarTela(idTela) {
+        // Esconde todas as seções (PDV, Cadastro e Inventário)
+        // Importante: Garanta que você adicionou a classe 'secao-admin' em cada view
+        document.querySelectorAll('.secao-admin').forEach(s => s.classList.remove('secao-ativa'));
+        
+        // Mostra a tela desejada
+        document.getElementById(idTela).classList.add('secao-ativa');
+        
+        if(idTela === 'viewPDV') {
+            setTimeout(() => document.getElementById('manualInput').focus(), 300);
+        }
     }
     
-    // Função que executa sua lógica de metrologia têxtil
+    // Esta é a função que automatiza a criação do código baseado na sua regra de negócio
     function gerarLogicaCampos() {
         const tipo = document.getElementById('cadTipo').value.trim().toUpperCase();
         const nome = document.getElementById('cadNome').value.trim().toUpperCase();
@@ -727,7 +712,6 @@
         const tamanho = document.getElementById('cadTamanho').value;
     
         // Lógica: 2 Tipo + 3 Nome + 3 Cor + Tamanho
-        // Usamos padEnd para evitar erro se o nome tiver menos de 3 letras
         const parteTipo = tipo.substring(0, 2).padEnd(2, 'X');
         const parteNome = nome.substring(0, 3).padEnd(3, 'X');
         const parteCor = cor.substring(0, 3).padEnd(3, 'X');
