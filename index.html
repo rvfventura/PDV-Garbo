@@ -324,7 +324,7 @@
 </div>
 
 <script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbzjCIrBPQWxqHs753DNv4wvfNHgJSx3_uCJJK-vBrOU3wBMDj0jTB7RKjf4ROGlOw9f_g/exec";
+    const URL_API = "https://script.google.com/macros/s/AKfycbw3R-dOo6ewOpIDlw-JoCDSpxspLVXLMpy7SnRa-y-2rdMY508vSRQcX8UrXA7fCVyFgg/exec";
     let carrinho = [];
     let estoqueLocal = [];
     let scanner;
@@ -834,34 +834,46 @@
         renderizarListaPreview();
     }
     
-    function enviarTudoParaEstoque() {
+    async function enviarTudoParaEstoque() {
         if (listaVariaçõesTemp.length === 0) return;
     
-        // Bloqueia o botão para evitar cliques duplos
         const btn = document.getElementById('btnCadastrarFinal');
         btn.disabled = true;
         btn.innerHTML = "⌛ SALVANDO NA PLANILHA...";
     
-        // Chama a função do servidor (Google Apps Script)
-        google.script.run
-            .withSuccessHandler(function(res) {
-                if (res.success) {
-                    mostrarAviso(res.mensagem, "success");
-                    limparListaVariações();
-                    // Opcional: recarrega o estoque no PDV para atualizar os números
-                    google.script.run.withSuccessHandler(carregarEstoqueInicial).getEstoquePlanilha(); 
-                    mudarTela('viewPDV');
-                } else {
-                    mostrarAviso(res.mensagem, "error");
-                    btn.disabled = false;
-                    btn.innerHTML = "CONFIRMAR E CADASTRAR NO SISTEMA";
-                }
-            })
-            .withFailureHandler(function(err) {
-                mostrarAviso("Erro crítico de conexão: " + err, "error");
+        const payload = {
+            acao: 'cadastrarNovosProdutos', // Nome da ação que você deve tratar no seu .gs
+            dados: listaVariaçõesTemp
+        };
+    
+        exibirLoader(true, "Cadastrando no Estoque...");
+    
+        try {
+            const response = await fetch(URL_API, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            
+            const res = await response.json();
+            
+            if (res.sucesso) {
+                mostrarAviso(res.mensagem || "Produtos cadastrados com sucesso!", "success");
+                limparListaVariações();
+                await carregarEstoqueInicial(); // Atualiza o cache local do PDV
+                mudarTela('viewPDV');
+            } else {
+                mostrarAviso(res.erro || "Erro ao cadastrar.", "error");
                 btn.disabled = false;
-            })
-            .cadastrarNovosProdutos(listaVariaçõesTemp);
+                btn.innerHTML = "CONFIRMAR E CADASTRAR NO SISTEMA";
+            }
+        } catch (e) {
+            console.error(e);
+            mostrarAviso("Erro de conexão com o servidor.", "error");
+            btn.disabled = false;
+            btn.innerHTML = "CONFIRMAR E CADASTRAR NO SISTEMA";
+        } finally {
+            exibirLoader(false);
+        }
     }
 </script>
 
