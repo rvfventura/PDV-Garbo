@@ -234,11 +234,11 @@
                         <div class="row g-2">
                             <div class="col-6">
                                 <label class="small fw-bold">Tipo</label>
-                                <input type="text" id="cadTipo" class="form-control form-control-sm text-uppercase" placeholder="Blusa">
+                                <input type="text" id="cadTipo" class="form-control form-control-sm text-uppercase" placeholder="Ex: Blusa">
                             </div>
                             <div class="col-6">
                                 <label class="small fw-bold">Nome</label>
-                                <input type="text" id="cadNome" class="form-control form-control-sm text-uppercase" placeholder="Lurex">
+                                <input type="text" id="cadNome" class="form-control form-control-sm text-uppercase" placeholder="Ex: Camila">
                             </div>
                         </div>
                     </div>
@@ -739,34 +739,38 @@
         const cor = document.getElementById('cadCor').value.trim().toUpperCase();
         const preco = document.getElementById('cadPreco').value;
         
-        // Captura os tamanhos selecionados nos checkboxes
         const checks = document.querySelectorAll('#grupoTamanhos input:checked');
         const manualTam = document.getElementById('cadTamanhoManual').value.trim().toUpperCase();
     
         if (!tipo || !nome || !cor || !preco || (checks.length === 0 && !manualTam)) {
-            return mostrarAviso("Preencha Modelo, Cor, Preço e selecione ao menos um tamanho!", "error");
+            return mostrarAviso("Preencha todos os campos!", "error");
         }
     
-        // Coleta os tamanhos selecionados
         let tamanhosParaAdicionar = Array.from(checks).map(c => c.value);
         if (manualTam) tamanhosParaAdicionar.push(manualTam);
     
         tamanhosParaAdicionar.forEach(tam => {
-            // Lógica Metrológica: 2 Letras Tipo + 3 Nome + 3 Cor + Tamanho
+            // Regra: 2 Tipo + 3 Nome + 3 Cor + Tamanho
             const cod = tipo.substring(0, 2).padEnd(2, 'X') +
                         nome.substring(0, 3).padEnd(3, 'X') +
                         cor.substring(0, 3).padEnd(3, 'X') + tam;
     
-            // Evita duplicados na mesma sessão de montagem
-            if (!listaVariaçõesTemp.some(item => item.codigo === cod)) {
-                // Dentro do seu forEach em adicionarVariacaoNaLista:
+            // VERIFICAÇÃO 1: No estoque que veio da planilha (Cache Local)
+            const existeNoEstoque = estoqueLocal.some(p => p.codigo === cod);
+            
+            // VERIFICAÇÃO 2: Na lista que você está montando agora (Memória Temporária)
+            const existeNaListaAtual = listaVariaçõesTemp.some(item => item.codigo === cod);
+    
+            if (existeNoEstoque || existeNaListaAtual) {
+                mostrarAviso(`O código ${cod} já existe ou já foi adicionado!`, "error");
+            } else {
                 listaVariaçõesTemp.push({
                     tipo: tipo,
                     nomeModelo: nome,
                     cor: cor,
                     tamanho: tam,
                     codigo: cod,
-                    preco: parseFloat(preco) || 0, // Mantenha como NÚMERO para cálculos
+                    preco: parseFloat(preco) || 0,
                     quantidade: parseInt(document.getElementById('cadQtd')?.value || 1),
                     nomeCombinado: `${tipo} ${nome} ${cor} ${tam}`,
                     descricao: `${tipo} ${nome} ${cor} ${tam}`
