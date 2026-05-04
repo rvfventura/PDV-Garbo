@@ -324,7 +324,7 @@
 </div>
 
 <script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbwlrF8g7m9J44QRzPDMPbLeZcAT6nLL1i0lR4RcCZIZ0_rCdYedrwpLPkOLOAXb1sLe/exec";
+    const URL_API = "https://script.google.com/macros/s/AKfycbwBZ-MqJsk8IBsAKUUypAAkJ0jOBSXMDVpTtIcf8UDS3J0SO7d-Ed7tBHjMCSquRFAyjA/exec";
     let carrinho = [];
     let estoqueLocal = [];
     let scanner;
@@ -760,10 +760,14 @@
             // Evita duplicados na mesma sessão de montagem
             if (!listaVariaçõesTemp.some(item => item.codigo === cod)) {
                 listaVariaçõesTemp.push({
+                    tipo: tipo,
+                    nomeModelo: nome,
+                    cor: cor,
+                    tamanho: tam,
                     codigo: cod,
-                    descricao: `${tipo} ${nome} ${cor} ${tam}`,
                     preco: parseFloat(preco),
-                    quantidade: 1 // Quantidade padrão inicial
+                    quantidade: 1, // Valor inicial para ajuste fino
+                    nomeCombinado: `${tipo} ${nome} ${cor}` // Formato para sua última coluna
                 });
             }
         });
@@ -831,11 +835,33 @@
     }
     
     function enviarTudoParaEstoque() {
-        // Aqui entrará o fetch para o seu Google Apps Script posterior
-        console.log("Produtos para enviar:", listaVariaçõesTemp);
-        mostrarAviso(`${listaVariaçõesTemp.length} produtos enviados com sucesso!`, "success");
-        limparListaVariações();
-        mudarTela('viewPDV');
+        if (listaVariaçõesTemp.length === 0) return;
+    
+        // Bloqueia o botão para evitar cliques duplos
+        const btn = document.getElementById('btnCadastrarFinal');
+        btn.disabled = true;
+        btn.innerHTML = "⌛ SALVANDO NA PLANILHA...";
+    
+        // Chama a função do servidor (Google Apps Script)
+        google.script.run
+            .withSuccessHandler(function(res) {
+                if (res.success) {
+                    mostrarAviso(res.mensagem, "success");
+                    limparListaVariações();
+                    // Opcional: recarrega o estoque no PDV para atualizar os números
+                    google.script.run.withSuccessHandler(carregarEstoqueInicial).getEstoquePlanilha(); 
+                    mudarTela('viewPDV');
+                } else {
+                    mostrarAviso(res.mensagem, "error");
+                    btn.disabled = false;
+                    btn.innerHTML = "CONFIRMAR E CADASTRAR NO SISTEMA";
+                }
+            })
+            .withFailureHandler(function(err) {
+                mostrarAviso("Erro crítico de conexão: " + err, "error");
+                btn.disabled = false;
+            })
+            .cadastrarNovosProdutos(listaVariaçõesTemp);
     }
 </script>
 
