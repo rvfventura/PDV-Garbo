@@ -881,7 +881,7 @@
     function limparFormularioCompleto() {
         // 1. Limpa o array de variações
         listaVariaçõesTemp = [];
-        
+        renderizarListaPreview();
         // 2. Limpa a tabela de preview (ajuste o ID conforme seu HTML)
         const tabela = document.getElementById('corpoTabelaPreview');
         if (tabela) tabela.innerHTML = "";
