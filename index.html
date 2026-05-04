@@ -831,10 +831,10 @@
         renderizarListaPreview();
     }
     
-    function limparListaVariações() {
+    /* function limparListaVariações() {
         listaVariaçõesTemp = [];
         renderizarListaPreview();
-    }
+    } */
     
     async function enviarTudoParaEstoque() {
         if (listaVariaçõesTemp.length === 0) return;
@@ -860,7 +860,7 @@
             
             if (res.sucesso) {
                 mostrarAviso(res.mensagem || "Produtos cadastrados com sucesso!", "success");
-                limparListaVariações();
+                limparFormularioCompleto();
                 await carregarEstoqueInicial(); // Atualiza o cache local do PDV
                 mudarTela('viewPDV');
             } else {
@@ -875,6 +875,33 @@
             btn.innerHTML = "CONFIRMAR E CADASTRAR NO SISTEMA";
         } finally {
             exibirLoader(false);
+        }
+    }
+
+    function limparFormularioCompleto() {
+        // 1. Limpa o array de variações
+        listaVariaçõesTemp = [];
+        
+        // 2. Limpa a tabela de preview (ajuste o ID conforme seu HTML)
+        const tabela = document.getElementById('corpoTabelaPreview');
+        if (tabela) tabela.innerHTML = "";
+    
+        // 3. Limpa os campos de entrada (Inputs)
+        const campos = ['cadTipo', 'cadNome', 'cadPreco', 'cadCor', 'cadTamanho', 'cadCodigo'];
+        campos.forEach(id => {
+            const campo = document.getElementById(id);
+            if (campo) campo.value = "";
+        });
+    
+        // 4. Reseta a quantidade para o padrão
+        const qtd = document.getElementById('cadQtd');
+        if (qtd) qtd.value = "1";
+    
+        // 5. Restaura o botão de cadastro (caso tenha ficado travado)
+        const btn = document.getElementById('btnCadastrarFinal');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = "CONFIRMAR E CADASTRAR NO SISTEMA";
         }
     }
 </script>
