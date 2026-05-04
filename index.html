@@ -140,6 +140,12 @@
                         </div>
                     </div>
                     <div class="mt-2 small text-muted" id="statusCache">Estoque local: carregando...</div>
+                    <!-- Botão Admin reposicionado -->
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="solicitarAcessoAdmin()">
+                            ⚙️ Configurações / Cadastro
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -150,10 +156,6 @@
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="m-0">Carrinho (<span id="qtdItens">0</span>)</h5>
                         <div>
-                            <!-- Botão de Administração -->
-                            <button class="btn btn-sm btn-dark me-1" onclick="solicitarAcessoAdmin()" title="Painel Admin">
-                                ⚙️ Admin
-                            </button>
                             <!-- Novo botão de Atualizar -->
                             <button class="btn btn-sm btn-outline-primary me-1" onclick="carregarEstoqueInicial()" title="Sincronizar Estoque">
                                 🔄 Atualizar
