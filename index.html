@@ -324,7 +324,7 @@
 </div>
 
 <script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbw3R-dOo6ewOpIDlw-JoCDSpxspLVXLMpy7SnRa-y-2rdMY508vSRQcX8UrXA7fCVyFgg/exec";
+    const URL_API = "https://script.google.com/macros/s/AKfycbxPZqs-S8NfIprRlGkFGVum574DsjQz-z-UGnc_aDfQj9QVNqMZ_RhWdmxrVQ-9k-h5aA/exec";
     let carrinho = [];
     let estoqueLocal = [];
     let scanner;
@@ -785,7 +785,7 @@
             tbody.innerHTML += `
                 <tr class="align-middle">
                     <td class="ps-3 fw-bold text-primary">${item.codigo}</td>
-                    <td class="small">${item.descricao}</td>
+                    <td class="small">${item.nomeCombinado}</td>
                     <td class="small">R$ ${item.preco.toFixed(2)}</td>
                     <td>
                         <input type="number" 
