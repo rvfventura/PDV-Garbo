@@ -879,30 +879,27 @@
     }
 
     function limparFormularioCompleto() {
-        // 1. Limpa o array de variações
+        // 1. Limpa o array e a renderização cuida do visual (tabela e botão)
         listaVariaçõesTemp = [];
         renderizarListaPreview();
-        // 2. Limpa a tabela de preview (ajuste o ID conforme seu HTML)
-        const tabela = document.getElementById('corpoTabelaPreview');
-        if (tabela) tabela.innerHTML = "";
     
-        // 3. Limpa os campos de entrada (Inputs)
-        const campos = ['cadTipo', 'cadNome', 'cadPreco', 'cadCor', 'cadTamanho', 'cadCodigo'];
+        // 2. Limpa os campos de entrada
+        const campos = ['cadTipo', 'cadNome', 'cadPreco', 'cadCor', 'cadTamanhoManual', 'cadCodigo'];
         campos.forEach(id => {
             const campo = document.getElementById(id);
             if (campo) campo.value = "";
         });
     
-        // 4. Reseta a quantidade para o padrão
-        const qtd = document.getElementById('cadQtd');
-        if (qtd) qtd.value = "1";
+        // 3. Reseta checkboxes de tamanhos (se houver)
+        document.querySelectorAll('#grupoTamanhos input').forEach(c => c.checked = false);
     
-        // 5. Restaura o botão de cadastro (caso tenha ficado travado)
+        // 4. Reseta a quantidade e devolve o foco ao primeiro campo[cite: 2]
+        if (document.getElementById('cadQtd')) document.getElementById('cadQtd').value = "1";
+        
         const btn = document.getElementById('btnCadastrarFinal');
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = "CONFIRMAR E CADASTRAR NO SISTEMA";
-        }
+        if (btn) btn.innerHTML = "CONFIRMAR E CADASTRAR NO SISTEMA";
+        
+        document.getElementById('cadTipo').focus();
     }
 </script>
 
