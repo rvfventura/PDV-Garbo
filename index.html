@@ -394,19 +394,31 @@
             oscillator.stop(audioCtx.currentTime + 0.1);
         } catch (e) { console.log("Áudio bloqueado."); }
     }
-    function sairDoSistema() {
+    async function sairDoSistema() {
+        // 1. DESLIGAR O SCANNER DO PDV (Crucial)
+        if (scanner) {
+            try {
+                await scanner.stop();
+                console.log("Scanner PDV desligado com sucesso.");
+            } catch (err) {
+                console.warn("Erro ao desligar scanner no logout:", err);
+            }
+        }
+    
+        // 2. Limpar dados da sessão
         window.onpopstate = null;
         vendedorLogado = "";
         document.getElementById('vendedorAtivo').value = "";
         carrinho = [];
         atualizarInterface();
         
-        // Tenta sair do Fullscreen se ainda estiver ativo
+        // 3. Sair do Fullscreen se estiver ativo
         if (document.fullscreenElement || document.webkitFullscreenElement) {
             const exitFS = document.exitFullscreen || document.webkitExitFullscreen;
             if (exitFS) exitFS.call(document).catch(err => console.log(err));
         }
         
+        // 4. Voltar para a tela de acesso
         document.getElementById('conteudoPrincipal').classList.add('oculto');
         document.getElementById('telaAcesso').classList.remove('oculto');
     }
