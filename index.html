@@ -807,9 +807,13 @@
     }
     
     async function mudarTela(idTela) {
-        // 1. Desligar todos os scanners ativos antes de mudar
-        if (scanner) { try { await scanner.stop(); } catch(e){} }
-        if (scannerInventario) { try { await scannerInventario.stop(); } catch(e){} }
+        // 1. Desligar scanners com verificação de estado
+        if (scanner && scanner.getState() === 2) { // 2 significa 'SCANNING'
+            try { await scanner.stop(); } catch(e) { console.log("Erro ao parar scanner PDV:", e); }
+        }
+        if (scannerInventario && scannerInventario.getState() === 2) {
+            try { await scannerInventario.stop(); } catch(e) { console.log("Erro ao parar scanner Inv:", e); }
+        }
     
         // 2. Esconder todas as telas
         document.querySelectorAll('.secao-admin').forEach(s => s.classList.remove('secao-ativa'));
@@ -817,13 +821,13 @@
         // 3. Mostrar a tela desejada
         document.getElementById(idTela).classList.add('secao-ativa');
         
-        // 4. Ligar o scanner específico da tela
+        // 4. Ligar o scanner específico
         if (idTela === 'viewPDV') {
-            iniciarScanner(); // Liga o scanner do PDV
+            iniciarScanner();
             setTimeout(() => document.getElementById('manualInput').focus(), 300);
         } 
         else if (idTela === 'viewInventario') {
-            iniciarScannerInventario(); // Liga o scanner do Inventário
+            iniciarScannerInventario();
         }
     }
     
