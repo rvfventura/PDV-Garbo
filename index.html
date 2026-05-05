@@ -346,6 +346,7 @@
 </div>
 
 <!-- View 3: Inventário e Ajustes --><!-- View 3: Inventário e Ajustes Padronizada -->
+<!-- View 3: Inventário e Ajustes Padronizada -->
 <div id="viewInventario" class="secao-admin container-fluid mt-2">
     <div class="card shadow-sm border-0">
         <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
@@ -355,43 +356,42 @@
         
         <div class="card-body p-3">
             <div class="row g-3">
-                <!-- Coluna de Controle -->
-                <div class="col-md-5">
-                    <div class="bg-light p-3 rounded mb-3">
-                        <label class="small fw-bold mb-1">Tipo de Operação Global:</label>
-                        <select id="tipoAjusteLote" class="form-select mb-3">
-                            <option value="balanco">Substituir Estoque (Balanço)</option>
-                            <option value="entrada">Somar ao Estoque (Entrada)</option>
-                            <option value="saida">Subtrair do Estoque (Saída)</option>
-                        </select>
-                        
-                        <div id="readerInventario" class="mx-auto border rounded" style="overflow: hidden;"></div>
-                        
-                        <div class="alert alert-info mt-3 py-2 text-center">
-                            <strong style="font-size: 1.2rem;">Itens lidos: <span id="contagemItens">0</span></strong>
+                <!-- Coluna da Esquerda: Apenas o Scanner -->
+                <div class="col-12 col-md-5">
+                    <div class="card shadow-sm border-0 h-100 d-flex align-items-center justify-content-center bg-light">
+                        <div class="card-body text-center w-100">
+                            <h6 class="mb-3 text-muted">Terminal de Leitura</h6>
+                            <div id="readerInventario" class="mx-auto border-0"></div>
                         </div>
                     </div>
-                    
-                    <button onclick="salvarInventarioEmLote()" class="btn btn-success w-100 btn-lg fw-bold shadow-sm">
-                        FINALIZAR E ATUALIZAR
-                    </button>
                 </div>
 
-                <!-- Coluna da Tabela -->
-                <div class="col-md-7">
-                    <div class="table-responsive border rounded bg-white" style="max-height: 450px;">
-                        <table class="table table-sm table-hover mb-0">
-                            <thead class="table-dark sticky-top">
-                                <tr>
-                                    <th class="ps-3">PRODUTO</th>
-                                    <th class="text-center" style="width: 80px;">QTD</th>
-                                    <th class="text-center" style="width: 60px;">AÇÃO</th>
-                                </tr>
-                            </thead>
-                            <tbody id="corpoListaInventario">
-                                <!-- Preenchido via JS -->
-                            </tbody>
-                        </table>
+                <!-- Coluna da Direita: Lista e Controles -->
+                <div class="col-12 col-md-7 d-flex flex-column" style="min-height: 450px;">
+                    <!-- Título da Lista igual ao Carrinho -->
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="m-0">Produtos (<span id="contagemItens">0</span>)</h5>
+                        <button class="btn btn-sm btn-outline-danger" onclick="itensInventario = []; renderizarListaInventario();">Limpar</button>
+                    </div>
+
+                    <!-- Lista de Itens Renderizados -->
+                    <div id="corpoListaInventario" class="carrinho-container flex-grow-1 border rounded p-2 bg-white mb-3" style="overflow-y: auto;">
+                        <!-- Preenchido via JS -->
+                    </div>
+
+                    <!-- Painel de Controle Inferior -->
+                    <div class="painel-pagamento mt-auto">
+                        <div class="mb-3">
+                            <label class="small fw-bold mb-1">Tipo de Operação Global:</label>
+                            <select id="tipoAjusteLote" class="form-select form-select-sm border-primary">
+                                <option value="balanco">Substituir Estoque (Balanço)</option>
+                                <option value="entrada">Somar ao Estoque (Entrada)</option>
+                                <option value="saida">Subtrair do Estoque (Saída)</option>
+                            </select>
+                        </div>
+                        <button onclick="salvarInventarioEmLote()" class="btn btn-success w-100 btn-lg fw-bold shadow-sm">
+                            FINALIZAR E ATUALIZAR
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1182,32 +1182,28 @@
         
         itensInventario.forEach((item, idx) => {
             totalPecas += item.quantidade;
-            
-            // Formatação idêntica ao carrinho: Nome + Tamanho
             const tamanhoTexto = item.tamanho ? `<span class="item-tamanho"> | ${item.tamanho}</span>` : "";
             
             lista.innerHTML += `
-                <div class="card item-card shadow-sm mb-2 border-0">
-                    <div class="card-body p-2">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div class="item-nome" style="flex: 1.5;">
-                                <strong>${item.nomeCombinado || item.nome}</strong>${tamanhoTexto}
-                            </div>
-                            <div class="text-center" style="flex: 0.5;">
-                                <span class="badge bg-primary rounded-pill">${item.quantidade}x</span>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-end" style="flex: 1; min-width: 90px;">
-                                <button class="btn btn-sm btn-outline-secondary border-0 px-2" onclick="alterarQtdInventario(${idx}, -1)">-</button>
-                                <button class="btn btn-sm btn-outline-secondary border-0 px-2 me-2" onclick="alterarQtdInventario(${idx}, 1)">+</button>
-                                <button class="btn btn-sm btn-outline-danger border-0 p-0 px-2" onclick="removerDoInventario(${idx})">✕</button>
-                            </div>
+                <div class="card item-card shadow-sm mb-2">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="item-nome" style="flex: 1.5;">
+                            <strong>${item.nomeCombinado || item.nome}</strong>${tamanhoTexto}
+                        </div>
+                        <div class="text-center" style="flex: 0.5; font-size: 0.85rem;">
+                            <span class="badge bg-primary">${item.quantidade}x</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-end" style="flex: 1; min-width: 90px;">
+                            <button class="btn btn-sm btn-outline-secondary border-0 px-2" onclick="alterarQtdInventario(${idx}, -1)">-</button>
+                            <button class="btn btn-sm btn-outline-secondary border-0 px-2 me-1" onclick="alterarQtdInventario(${idx}, 1)">+</button>
+                            <button class="btn btn-sm btn-outline-danger border-0 p-0 px-2" onclick="removerDoInventario(${idx})">✕</button>
                         </div>
                     </div>
                 </div>`;
         });
     
-        const elementContagem = document.getElementById('contagemItens');
-        if (elementContagem) elementContagem.innerText = totalPecas;
+        // Atualiza o número dentro dos parênteses no título
+        document.getElementById('contagemItens').innerText = totalPecas;
     }
     
     // Funções auxiliares para melhorar a usabilidade no inventário
