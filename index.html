@@ -345,7 +345,6 @@
     </div>
 </div>
 
-<!-- View 3: Inventário e Ajustes --><!-- View 3: Inventário e Ajustes Padronizada -->
 <!-- View 3: Inventário e Ajustes Padronizada -->
 <div id="viewInventario" class="secao-admin container-fluid mt-2">
     <div class="card shadow-sm border-0">
@@ -398,10 +397,59 @@
         </div>
     </div>
 </div>
+
+<!-- View 4: Edição e Gestão de Produtos -->
+<div id="viewEdicao" class="secao-admin container-fluid mt-2">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+            <h5 class="mb-0 text-primary fw-bold">✏️ Gestão de Produto</h5>
+            <button class="btn btn-sm btn-outline-secondary" onclick="mudarTela('viewPDV')">Sair</button>
+        </div>
+        <div class="card-body">
+            <!-- Busca Rápida -->
+            <div class="input-group mb-4">
+                <input type="text" id="inputBuscaEdicao" class="form-control text-uppercase" placeholder="Bipe ou digite o código para editar...">
+                <button class="btn btn-primary" onclick="buscarParaEdicao(document.getElementById('inputBuscaEdicao').value)">Buscar</button>
+            </div>
+
+            <div id="formEdicao" class="oculto border rounded p-3 bg-light">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="small fw-bold">Nome do Modelo</label>
+                        <input type="text" id="editNome" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small fw-bold">Preço (R$)</label>
+                        <input type="number" id="editPreco" class="form-control form-control-sm" step="0.01">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small fw-bold">Estoque Atual</label>
+                        <input type="number" id="editEstoque" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small fw-bold">Tamanho</label>
+                        <input type="text" id="editTamanho" class="form-control form-control-sm" readonly>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="form-check form-switch mb-1">
+                            <input class="form-check-input" type="checkbox" id="editStatus">
+                            <label class="form-check-label small fw-bold">Ativo</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 d-flex gap-2">
+                    <button class="btn btn-success fw-bold flex-grow-1" onclick="salvarAlteracoes()">SALVAR ALTERAÇÕES</button>
+                    <button class="btn btn-outline-danger" onclick="confirmarInativacao()">INATIVAR PRODUTO</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    
 </div>
 
 <script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbx7OwAMc9GRGq_dxCZn6cbGWdpl0LYHGsEp_RVuoB0eBeB-k8HJSeGF0efqnuh6PJiykg/exec";
+    const URL_API = "https://script.google.com/macros/s/AKfycbxzBsj8r2zPuxLyF-070wvQciJ8tS0e1wgWXxYnMDSsV8MzkQ2OG1cIKEBUF0TobKLMzA/exec";
     let carrinho = [];
     let estoqueLocal = [];
     let scanner;
@@ -866,8 +914,13 @@
         fecharMenuAdmin();
         if (tipo === 'cadastro') {
             mudarTela('viewCadastro');
-        } else {
+        } else if (tipo === 'inventario') {
             mudarTela('viewInventario');
+            // Inicializa o leitor do inventário se necessário
+        } else if (tipo === 'edicao') {
+            mudarTela('viewEdicao');
+            document.getElementById('formEdicao').classList.add('oculto');
+            document.getElementById('inputBuscaEdicao').focus();
         }
     }
     
@@ -1234,6 +1287,55 @@
         }
     }
 
+// FUNÇÕES PARA A TELA DE EDIÇÃO DE PRODUTOS
+    let produtoSelecionadoEdicao = null;
+
+    function buscarParaEdicao(codigo) {
+        if (!codigo) return;
+        const cod = codigo.trim().toUpperCase();
+        const produto = estoqueLocal.find(p => p.codigo === cod);
+    
+        if (produto) {
+            produtoSelecionadoEdicao = produto;
+            document.getElementById('editNome').value = produto.nome || produto.nomeCombinado;
+            document.getElementById('editPreco').value = produto.preco;
+            document.getElementById('editEstoque').value = produto.quantidade;
+            document.getElementById('editTamanho').value = produto.tamanho || "";
+            document.getElementById('editStatus').checked = produto.status !== "Inativo";
+            
+            document.getElementById('formEdicao').classList.remove('oculto');
+            playBeep();
+        } else {
+            mostrarAviso("Produto não encontrado!", "error");
+        }
+    }
+    
+    async function salvarAlteracoes() {
+        const payload = {
+            acao: 'editarProdutoManual',
+            dados: {
+                codigo: produtoSelecionadoEdicao.codigo,
+                nome: document.getElementById('editNome').value,
+                preco: parseFloat(document.getElementById('editPreco').value),
+                quantidade: parseInt(document.getElementById('editEstoque').value),
+                status: document.getElementById('editStatus').checked ? "Ativo" : "Inativo",
+                vendedor: vendedorLogado
+            }
+        };
+    
+        exibirLoader(true, "Salvando...");
+        try {
+            const response = await fetch(URL_API, { method: 'POST', body: JSON.stringify(payload) });
+            const res = await response.json();
+            if (res.sucesso) {
+                mostrarAviso("Alterações salvas!");
+                await carregarEstoqueInicial(); // Atualiza o cache local
+                document.getElementById('formEdicao').classList.add('oculto');
+            }
+        } catch (e) {
+            mostrarAviso("Erro ao salvar.", "error");
+        } finally { exibirLoader(false); }
+    }
 
 </script>
 
@@ -1287,6 +1389,10 @@
             </button>
             <button class="btn btn-dark py-3 fw-bold" onclick="acessarAdmin('inventario')">
                 🔍 INVENTÁRIO / AJUSTES
+            </button>
+            <!-- Novo botão de Gestão -->
+            <button class="btn btn-warning py-3 fw-bold" onclick="acessarAdmin('edicao')">
+                ✏️ GESTÃO / EDITAR PRODUTO
             </button>
             <hr>
             <button class="btn btn-outline-secondary py-2" onclick="fecharMenuAdmin()">
