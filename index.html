@@ -1171,48 +1171,54 @@
     }
     
     function renderizarListaInventario() {
-        const corpo = document.getElementById('corpoListaInventario');
-        const contador = document.getElementById('contagemItens');
-        corpo.innerHTML = ''; // Limpa a tabela
+        const lista = document.getElementById('corpoListaInventario'); // Mantenha o ID do container
+        let totalPecas = 0;
+        lista.innerHTML = "";
         
-        let totalItens = 0;
-    
-        itensInventario.forEach((item, index) => {
-            totalItens += item.quantidade;
+        itensInventario.forEach((item, idx) => {
+            totalPecas += item.quantidade;
             
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>
-                    <small>${item.codigo}</small><br>
-                    <strong>${item.nome}</strong>
-                </td>
-                <td>
-                    <input type="number" value="${item.quantidade}" 
-                        onchange="editarQuantidadeInventario(${index}, this.value)" 
-                        style="width: 50px; text-align: center;">
-                </td>
-                <td>
-                    <button onclick="removerDoInventario(${index})" class="btn-lixeira">🗑️</button>
-                </td>
-            `;
-            corpo.appendChild(tr);
+            // Mantendo o padrão de exibição de tamanho se houver
+            const tamanhoTexto = item.tamanho ? `<span class="item-tamanho text-muted"> | ${item.tamanho}</span>` : "";
+            
+            lista.innerHTML += `
+                <div class="card item-card shadow-sm mb-2 border-0" style="background: #fdfdfd;">
+                    <div class="card-body p-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="item-nome" style="flex: 1.5;">
+                                <div class="small text-muted" style="font-size: 0.7rem;">${item.codigo}</div>
+                                <strong>${item.nomeCombinado || item.nome}</strong>${tamanhoTexto}
+                            </div>
+                            <div class="text-center" style="flex: 0.5;">
+                                <span class="badge bg-primary rounded-pill" style="font-size: 0.9rem;">${item.quantidade}x</span>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-end" style="flex: 1; min-width: 80px;">
+                                <button class="btn btn-sm btn-outline-secondary border-0 me-2" onclick="alterarQtdInventario(${idx}, -1)">-</button>
+                                <button class="btn btn-sm btn-outline-secondary border-0 me-2" onclick="alterarQtdInventario(${idx}, 1)">+</button>
+                                <button class="btn btn-sm btn-outline-danger border-0 p-0 px-2" onclick="removerDoInventario(${idx})">✕</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
         });
     
-        contador.innerText = totalItens;
-    }
-    
-    // Permite ajustar a quantidade manualmente na tabela
-    function editarQuantidadeInventario(index, novaQtd) {
-        const qtd = parseInt(novaQtd);
-        if (qtd > 0) {
-            itensInventario[index].quantidade = qtd;
-        } else {
-            removerDoInventario(index);
+        // Atualiza o contador de peças no cabeçalho do inventário
+        const elementContagem = document.getElementById('contagemItens');
+        if (elementContagem) {
+            elementContagem.innerText = totalPecas;
         }
-        renderizarListaInventario();
     }
     
-    // Permite excluir um item que foi lido errado
+    // Funções auxiliares para melhorar a usabilidade no inventário
+    function alterarQtdInventario(index, delta) {
+        itensInventario[index].quantidade += delta;
+        if (itensInventario[index].quantidade <= 0) {
+            removerDoInventario(index);
+        } else {
+            renderizarListaInventario();
+        }
+    }
+    
     function removerDoInventario(index) {
         itensInventario.splice(index, 1);
         renderizarListaInventario();
