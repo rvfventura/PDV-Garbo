@@ -92,6 +92,30 @@
             width: 90%;
             max-width: 500px;
         }
+
+        .tabela-scroll {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        
+        .status-lote {
+            background: #f0f4f7;
+            padding: 10px;
+            text-align: center;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 1.1em;
+        }
+        
+        .btn-lixeira {
+            background: none;
+            border: none;
+            font-size: 1.2em;
+            cursor: pointer;
+        }
     </style>
 </head>   
 <body>
@@ -312,54 +336,45 @@
 </div>
 
 <!-- View 3: Inventário e Ajustes -->
-<div id="viewInventario" class="secao-admin container-fluid mt-2">
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-2">
-            <h5 class="mb-0 fw-bold">🔍 Ajuste de Estoque</h5>
-            <button class="btn btn-sm btn-outline-light" onclick="pararScannersEMudar('viewPDV')">Sair</button>
-        </div>
-        <div class="card-body p-3">
-            <div class="row g-3">
-                <!-- Painel de Leitura -->
-                <div class="col-md-5">
-                    <div id="readerInventario" class="mx-auto rounded border" style="width: 100%; max-width: 350px;"></div>
-                    <div class="input-group mt-2">
-                        <input type="text" id="inputCodInventario" class="form-control" placeholder="Código Manual">
-                        <button class="btn btn-primary" onclick="buscarParaAjuste(document.getElementById('inputCodInventario').value)">Consultar</button>
-                    </div>
-                </div>
-
-                <!-- Painel de Edição -->
-                <div class="col-md-7">
-                    <div id="detalhesAjuste" class="p-3 border rounded bg-light d-none">
-                        <h6 class="fw-bold text-primary" id="ajusteNome">---</h6>
-                        <div class="d-flex justify-content-between mb-3">
-                            <span>Código: <b id="ajusteCodigo">---</b></span>
-                            <span>Estoque Atual: <span class="badge bg-secondary" id="ajusteQtdAtual">0</span></span>
-                        </div>
-
-                        <label class="small fw-bold">Tipo de Movimentação:</label>
-                        <select id="tipoAjuste" class="form-select mb-3">
-                            <option value="entrada">➕ Entrada (Novo Lote)</option>
-                            <option value="saida">➖ Saída (Defeito / Retirada)</option>
-                            <option value="inventario">🎯 Inventário (Contagem Real)</option>
-                        </select>
-
-                        <label class="small fw-bold">Quantidade:</label>
-                        <input type="number" id="qtdAjuste" class="form-control form-control-lg mb-3" value="1" min="1">
-
-                        <button class="btn btn-success w-100 btn-lg fw-bold" onclick="salvarAjusteEstoque()">
-                            CONFIRMAR AJUSTE
-                        </button>
-                    </div>
-                    <div id="msgAjusteHome" class="text-center text-muted p-5">
-                        <i class="bi bi-upc-scan d-block mb-2" style="font-size: 2rem;"></i>
-                        Aguardando leitura de produto...
-                    </div>
-                </div>
-            </div>
-        </div>
+<div id="viewInventario" class="secao-admin">
+    <h3>Inventário em Lote</h3>
+    
+    <!-- Seletor do Tipo de Operação -->
+    <div class="form-group">
+        <label>Tipo de Operação Global:</label>
+        <select id="tipoAjusteLote" class="form-control">
+            <option value="balanco">Substituir Estoque (Balanço)</option>
+            <option value="entrada">Somar ao Estoque (Entrada)</option>
+            <option value="saida">Subtrair do Estoque (Saída)</option>
+        </select>
     </div>
+
+    <!-- Scanner -->
+    <div id="readerInventario" style="width: 100%; max-width: 400px; margin: auto;"></div>
+    
+    <!-- Contador Rápido -->
+    <div class="status-lote">
+        <strong>Itens na lista: </strong><span id="contagemItens">0</span>
+    </div>
+
+    <!-- Tabela de Itens Lidos -->
+    <div class="tabela-scroll">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Qtd</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="corpoListaInventario">
+                <!-- Os itens entrarão aqui via JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <button onclick="salvarInventarioEmLote()" class="btn-confirmar">Finalizar e Atualizar Estoque</button>
+    <button onclick="mudarTela('menuAdmin')" class="btn-cancelar">Cancelar</button>
 </div>
 </div>
 
@@ -455,21 +470,32 @@
     let scannerInventario;
 
     function iniciarScannerInventario() {
-        // Se já existe uma instância, não criamos outra, apenas iniciamos se estiver parada
         if (!scannerInventario) {
             scannerInventario = new Html5Qrcode("readerInventario");
         }
         
         const config = { fps: 15, qrbox: { width: 250, height: 250 } };
         
-        // Só inicia se o estado for IDLE (Estado 1)
         if (scannerInventario.getState() === 1) {
             scannerInventario.start(
                 { facingMode: "environment" }, 
                 config, 
-                codigo => {
-                    document.getElementById('inputCodInventario').value = codigo;
-                    buscarParaAjuste(codigo);
+                async codigo => {
+                    // SÓ PROCESSA SE A TRAVA ESTIVER LIBERADA
+                    if (!processandoLeituraInventario) {
+                        processandoLeituraInventario = true; // Trava
+                        
+                        // Adiciona à lista de contagem (lógica do carrinho)
+                        adicionarAoInventario(codigo);
+    
+                        // Feedback visual/sonoro pode ser inserido aqui
+                        console.log("Código lido no inventário:", codigo);
+    
+                        // Libera a trava após 2 segundos para a próxima peça
+                        setTimeout(() => {
+                            processandoLeituraInventario = false;
+                        }, 2000);
+                    }
                 }
             ).catch(err => console.error("Erro ao ligar câmera Inventário:", err));
         }
@@ -1030,6 +1056,8 @@
 //NOVAS FUNÇÕES PARA INVETÁRIO E AJUSTES DE ESTOQUE
 
     let produtoEmAjuste = null;
+    let itensInventario = []; // Nossa lista de contagem
+    let processandoLeituraInventario = false; // A trava (flag)
     
     function buscarParaAjuste(codigo) {
         if (!codigo) return;
@@ -1049,27 +1077,25 @@
         }
     }
     
-    async function salvarAjusteEstoque() {
-        if (!produtoEmAjuste) return;
-    
-        const tipo = document.getElementById('tipoAjuste').value;
-        const qtdInformada = parseInt(document.getElementById('qtdAjuste').value);
-        
-        if (isNaN(qtdInformada) || qtdInformada <= 0 && tipo !== 'inventario') {
-            return mostrarAviso("Informe uma quantidade válida.", "error");
+    async function salvarInventarioEmLote() {
+        if (itensInventario.length === 0) {
+            return mostrarAviso("A lista de inventário está vazia.", "error");
         }
     
+        const tipoAjuste = document.getElementById('tipoAjusteLote').value; // 'entrada', 'saida' ou 'balanco'
+        
         const payload = {
-            acao: 'ajustarEstoque',
+            acao: 'ajustarEstoqueLote', // Nova ação para o seu Apps Script
             dados: {
-                codigo: produtoEmAjuste.codigo,
-                tipoAjuste: tipo,
-                quantidade: qtdInformada,
-                vendedor: vendedorLogado
+                itens: itensInventario, // Enviamos a lista completa [{codigo, quantidade}, ...]
+                tipoAjuste: tipoAjuste,
+                vendedor: vendedorLogado,
+                data: new Date().toISOString()
             }
         };
     
-        exibirLoader(true, "Salvando ajuste...");
+        exibirLoader(true, "Atualizando estoque de " + itensInventario.length + " itens...");
+        
         try {
             const response = await fetch(URL_API, {
                 method: 'POST',
@@ -1078,20 +1104,88 @@
             const res = await response.json();
     
             if (res.sucesso) {
-                mostrarAviso("Estoque atualizado!");
-                await carregarEstoqueInicial(); // Sincroniza o espelho local
-                document.getElementById('detalhesAjuste').classList.add('d-none');
-                document.getElementById('msgAjusteHome').classList.remove('d-none');
+                mostrarAviso("Inventário finalizado com sucesso!");
+                itensInventario = []; // Limpa a lista após o sucesso
+                renderizarListaInventario(); // Limpa a interface
+                await carregarEstoqueInicial(); // Sincroniza o espelho local[cite: 4]
             } else {
                 mostrarAviso("Erro: " + res.erro, "error");
             }
         } catch (e) {
-            mostrarAviso("Erro de conexão.", "error");
+            mostrarAviso("Erro de conexão ao salvar lote.", "error");
         } finally {
             exibirLoader(false);
         }
     }
+
+    function adicionarAoInventario(codigo) {
+        // 1. Verifica se o item já está na lista temporária de inventário
+        const itemExistente = itensInventario.find(item => item.codigo === codigo);
     
+        if (itemExistente) {
+            itemExistente.quantidade++;
+        } else {
+            // Se for novo na lista, adicionamos com qtd 1
+            // Aqui você pode buscar o nome do produto no seu array 'produtos' se quiser exibir
+            const infoProduto = produtos.find(p => p.codigo === codigo) || { nome: "Produto Desconhecido" };
+            
+            itensInventario.push({
+                codigo: codigo,
+                nome: infoProduto.nome,
+                quantidade: 1
+            });
+        }
+    
+        // 2. Atualiza a interface da lista na tela de inventário
+        renderizarListaInventario();
+    }
+    function renderizarListaInventario() {
+        const corpo = document.getElementById('corpoListaInventario');
+        const contador = document.getElementById('contagemItens');
+        corpo.innerHTML = ''; // Limpa a tabela
+        
+        let totalItens = 0;
+    
+        itensInventario.forEach((item, index) => {
+            totalItens += item.quantidade;
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <small>${item.codigo}</small><br>
+                    <strong>${item.nome}</strong>
+                </td>
+                <td>
+                    <input type="number" value="${item.quantidade}" 
+                        onchange="editarQuantidadeInventario(${index}, this.value)" 
+                        style="width: 50px; text-align: center;">
+                </td>
+                <td>
+                    <button onclick="removerDoInventario(${index})" class="btn-lixeira">🗑️</button>
+                </td>
+            `;
+            corpo.appendChild(tr);
+        });
+    
+        contador.innerText = totalItens;
+    }
+    
+    // Permite ajustar a quantidade manualmente na tabela
+    function editarQuantidadeInventario(index, novaQtd) {
+        const qtd = parseInt(novaQtd);
+        if (qtd > 0) {
+            itensInventario[index].quantidade = qtd;
+        } else {
+            removerDoInventario(index);
+        }
+        renderizarListaInventario();
+    }
+    
+    // Permite excluir um item que foi lido errado
+    function removerDoInventario(index) {
+        itensInventario.splice(index, 1);
+        renderizarListaInventario();
+    }
     async function pararScannersEMudar(proximaTela) {
         // Forçamos o desligamento aguardando a promessa
         if (scannerInventario && scannerInventario.getState() === 2) {
