@@ -422,14 +422,19 @@
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
+            
             oscillator.type = "sine";
-            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // Tom mais agudo e limpo
             gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
+            
             oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.1);
-        } catch (e) { console.log("Áudio bloqueado."); }
+            oscillator.stop(audioCtx.currentTime + 0.1); // Beep curto de 100ms
+        } catch (e) { 
+            console.log("Áudio bloqueado ou erro no contexto:", e); 
+        }
     }
     async function sairDoSistema() {
         // 1. DESLIGAR O SCANNER DO PDV (Ação Crítica)
@@ -1144,57 +1149,56 @@
         if (!codigo) return;
         const cod = codigo.trim().toUpperCase();
         
-        // 1. Verifica se o item já está na lista temporária de inventário
+        // Toca o beep imediatamente ao identificar um código
+        playBeep(); 
+    
         const itemExistente = itensInventario.find(item => item.codigo === cod);
     
         if (itemExistente) {
             itemExistente.quantidade++;
         } else {
-            // CORREÇÃO: Busca as informações no estoqueLocal, que é onde os dados da planilha residem
             const infoProduto = estoqueLocal.find(p => p.codigo === cod);
             
             if (infoProduto) {
                 itensInventario.push({
                     codigo: cod,
-                    nome: infoProduto.nomeCombinado || infoProduto.nome,
+                    nome: infoProduto.nome,
+                    nomeCombinado: infoProduto.nomeCombinado,
+                    tamanho: infoProduto.tamanho || "", // Garante que o tamanho seja capturado
                     quantidade: 1
                 });
-                playBeep();
             } else {
-                mostrarAviso("Produto " + cod + " não encontrado no estoque!", "error");
+                mostrarAviso("Produto " + cod + " não encontrado!", "error");
                 return;
             }
         }
-    
-        // 2. Atualiza a interface
         renderizarListaInventario();
     }
     
     function renderizarListaInventario() {
-        const lista = document.getElementById('corpoListaInventario'); // Mantenha o ID do container
+        const lista = document.getElementById('corpoListaInventario');
         let totalPecas = 0;
         lista.innerHTML = "";
         
         itensInventario.forEach((item, idx) => {
             totalPecas += item.quantidade;
             
-            // Mantendo o padrão de exibição de tamanho se houver
-            const tamanhoTexto = item.tamanho ? `<span class="item-tamanho text-muted"> | ${item.tamanho}</span>` : "";
+            // Formatação idêntica ao carrinho: Nome + Tamanho
+            const tamanhoTexto = item.tamanho ? `<span class="item-tamanho"> | ${item.tamanho}</span>` : "";
             
             lista.innerHTML += `
-                <div class="card item-card shadow-sm mb-2 border-0" style="background: #fdfdfd;">
+                <div class="card item-card shadow-sm mb-2 border-0">
                     <div class="card-body p-2">
                         <div class="d-flex align-items-center justify-content-between">
                             <div class="item-nome" style="flex: 1.5;">
-                                <div class="small text-muted" style="font-size: 0.7rem;">${item.codigo}</div>
                                 <strong>${item.nomeCombinado || item.nome}</strong>${tamanhoTexto}
                             </div>
                             <div class="text-center" style="flex: 0.5;">
-                                <span class="badge bg-primary rounded-pill" style="font-size: 0.9rem;">${item.quantidade}x</span>
+                                <span class="badge bg-primary rounded-pill">${item.quantidade}x</span>
                             </div>
-                            <div class="d-flex align-items-center justify-content-end" style="flex: 1; min-width: 80px;">
-                                <button class="btn btn-sm btn-outline-secondary border-0 me-2" onclick="alterarQtdInventario(${idx}, -1)">-</button>
-                                <button class="btn btn-sm btn-outline-secondary border-0 me-2" onclick="alterarQtdInventario(${idx}, 1)">+</button>
+                            <div class="d-flex align-items-center justify-content-end" style="flex: 1; min-width: 90px;">
+                                <button class="btn btn-sm btn-outline-secondary border-0 px-2" onclick="alterarQtdInventario(${idx}, -1)">-</button>
+                                <button class="btn btn-sm btn-outline-secondary border-0 px-2 me-2" onclick="alterarQtdInventario(${idx}, 1)">+</button>
                                 <button class="btn btn-sm btn-outline-danger border-0 p-0 px-2" onclick="removerDoInventario(${idx})">✕</button>
                             </div>
                         </div>
@@ -1202,11 +1206,8 @@
                 </div>`;
         });
     
-        // Atualiza o contador de peças no cabeçalho do inventário
         const elementContagem = document.getElementById('contagemItens');
-        if (elementContagem) {
-            elementContagem.innerText = totalPecas;
-        }
+        if (elementContagem) elementContagem.innerText = totalPecas;
     }
     
     // Funções auxiliares para melhorar a usabilidade no inventário
