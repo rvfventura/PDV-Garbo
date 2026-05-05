@@ -774,28 +774,43 @@
     function solicitarAcessoAdmin() {
         const pin = prompt("Digite o PIN de administrador:");
         if (pin === PIN_MESTRE) {
-            const escolha = confirm("OK! Deseja ir para o CADASTRO?\n(Clique em Cancelar para INVENTÁRIO)");
-            if (escolha) mudarTela('viewCadastro');
-            else mudarTela('viewInventario');
+            document.getElementById('modalMenuAdmin').classList.remove('oculto');
         } else if (pin !== null) {
             mostrarAviso("PIN Incorreto!", "error");
         }
     }
     
-    function mudarTela(idTela) {
-        // Esconde todas as seções
+    function fecharMenuAdmin() {
+        document.getElementById('modalMenuAdmin').classList.add('oculto');
+    }
+    
+    function acessarAdmin(tipo) {
+        fecharMenuAdmin();
+        if (tipo === 'cadastro') {
+            mudarTela('viewCadastro');
+        } else {
+            mudarTela('viewInventario');
+        }
+    }
+    
+    async function mudarTela(idTela) {
+        // 1. Desligar todos os scanners ativos antes de mudar
+        if (scanner) { try { await scanner.stop(); } catch(e){} }
+        if (scannerInventario) { try { await scannerInventario.stop(); } catch(e){} }
+    
+        // 2. Esconder todas as telas
         document.querySelectorAll('.secao-admin').forEach(s => s.classList.remove('secao-ativa'));
         
-        // Mostra a tela desejada
+        // 3. Mostrar a tela desejada
         document.getElementById(idTela).classList.add('secao-ativa');
         
-        // Lógica específica para cada tela
-        if(idTela === 'viewPDV') {
+        // 4. Ligar o scanner específico da tela
+        if (idTela === 'viewPDV') {
+            iniciarScanner(); // Liga o scanner do PDV
             setTimeout(() => document.getElementById('manualInput').focus(), 300);
         } 
-        else if(idTela === 'viewInventario') {
-            // Inicia o scanner específico da área de inventário
-            iniciarScannerInventario();
+        else if (idTela === 'viewInventario') {
+            iniciarScannerInventario(); // Liga o scanner do Inventário
         }
     }
     
@@ -1091,5 +1106,24 @@
     .oculto { display: none !important; }
 </style>    
 
+<!-- Modal de Seleção Admin -->
+<div id="modalMenuAdmin" class="modal-overlay oculto">
+    <div class="modal-content shadow-lg border-0">
+        <h5 class="fw-bold mb-4">Área Administrativa</h5>
+        <div class="d-grid gap-3">
+            <button class="btn btn-primary py-3 fw-bold" onclick="acessarAdmin('cadastro')">
+                📦 CADASTRAR PRODUTOS
+            </button>
+            <button class="btn btn-dark py-3 fw-bold" onclick="acessarAdmin('inventario')">
+                🔍 INVENTÁRIO / AJUSTES
+            </button>
+            <hr>
+            <button class="btn btn-outline-secondary py-2" onclick="fecharMenuAdmin()">
+                CANCELAR
+            </button>
+        </div>
+    </div>
+</div>
+    
 </body>
 </html>
