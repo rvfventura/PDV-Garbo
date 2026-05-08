@@ -408,8 +408,12 @@
         <div class="card-body p-3">
             <div class="row g-2 mb-3 bg-light p-3 rounded">
                 <div class="col-12 col-md-4">
-                    <label class="small fw-bold">Atalho por Código (Bipar):</label>
-                    <input type="text" id="inputBuscaEdicao" class="form-control form-control-sm text-uppercase" placeholder="Bipe para trazer a família..." onkeydown="if(event.key === 'Enter') buscarFamiliaPorCodigo(this.value)">
+                    <label class="small fw-bold">Atalho por QR Code:</label>
+                    <div class="d-flex gap-2">
+                        <input type="text" id="inputBuscaEdicao" class="form-control form-control-sm text-uppercase" placeholder="Código...">
+                        <button class="btn btn-sm btn-primary" onclick="alternarCameraEdicao()">📷</button>
+                    </div>
+                    <div id="readerEdicao" class="mt-2 border rounded" style="display:none;"></div>
                 </div>
                 <div class="col-12 col-sm-6 col-md-4">
                     <label class="small fw-bold">Filtrar por Tipo:</label>
@@ -1303,12 +1307,20 @@
     // Popula o select de Tipos ao entrar na tela de edição
     function inicializarFiltrosEdicao() {
         const selectTipo = document.getElementById('filtroTipoEdicao');
+        if (!selectTipo) return;
+        
         selectTipo.innerHTML = '<option value="">Selecione o Tipo...</option>';
         
-        // Pega os tipos únicos do seu estoqueLocal
+        // Extrai tipos únicos do estoqueLocal
         const tiposUnicos = [...new Set(estoqueLocal.map(p => p.tipo))].sort();
+        
         tiposUnicos.forEach(tipo => {
-            if(tipo) selectTipo.innerHTML += `<option value="${tipo}">${tipo}</option>`;
+            if (tipo) {
+                const option = document.createElement('option');
+                option.value = tipo;
+                option.text = tipo;
+                selectTipo.appendChild(option);
+            }
         });
         
         document.getElementById('filtroModeloEdicao').innerHTML = '<option value="">Selecione o Modelo...</option>';
@@ -1349,21 +1361,26 @@
     function buscarFamiliaPorCodigo(codigo) {
         if (!codigo) return;
         const cod = codigo.trim().toUpperCase();
-        const produtoReferencia = estoqueLocal.find(p => p.codigo === cod);
+        const produtoRef = estoqueLocal.find(p => p.codigo === cod);
     
-        if (produtoReferencia) {
+        if (produtoRef) {
             playBeep();
-            // Seta os selects para sincronizar com a busca do QR
-            document.getElementById('filtroTipoEdicao').value = produtoReferencia.tipo;
-            atualizarSelectModelosEdicao();
-            document.getElementById('filtroModeloEdicao').value = produtoReferencia.nome;
             
-            // Filtra toda a família deste item
-            familiaAtiva = estoqueLocal.filter(p => p.tipo === produtoReferencia.tipo && p.nome === produtoReferencia.nome);
-            renderizarTabelaFamilia(`${produtoReferencia.tipo} - ${produtoReferencia.nome}`);
-            document.getElementById('inputBuscaEdicao').value = ""; // Limpa campo de busca
+            // Sincroniza os selects
+            document.getElementById('filtroTipoEdicao').value = produtoRef.tipo;
+            atualizarSelectModelosEdicao();
+            document.getElementById('filtroModeloEdicao').value = produtoRef.nome;
+            
+            // Filtra a família
+            familiaAtiva = estoqueLocal.filter(p => p.tipo === produtoRef.tipo && p.nome === produtoRef.nome);
+            
+            // CORREÇÃO: Título sem undefined
+            const titulo = `${produtoRef.tipo || "Geral"} - ${produtoRef.nome || "Modelo"}`;
+            renderizarTabelaFamilia(titulo);
+            
+            document.getElementById('inputBuscaEdicao').value = cod;
         } else {
-            mostrarAviso("Código não cadastrado no estoque!", "error");
+            mostrarAviso("Código não encontrado!", "error");
         }
     }
     
@@ -1375,10 +1392,14 @@
     
         familiaAtiva.forEach((item, index) => {
             const statusChecked = item.status !== "Inativo" ? "checked" : "";
+            
+            // CORREÇÃO: Usando os nomes exatos das propriedades da sua planilha
+            const corExibicao = item.cor || "---"; 
+            
             corpo.innerHTML += `
                 <tr>
                     <td><small class="text-muted">${item.codigo}</small></td>
-                    <td><strong>${item.cor || "Padrão"}</strong></td>
+                    <td><strong>${corExibicao}</strong></td>
                     <td><span class="badge bg-secondary">${item.tamanho || "U"}</span></td>
                     <td>
                         <input type="number" step="0.01" class="form-control form-control-sm" 
@@ -1396,7 +1417,6 @@
                 </tr>
             `;
         });
-    
         document.getElementById('painelFamiliaEdicao').classList.remove('oculto');
     }
     
@@ -1447,6 +1467,34 @@
         }
     }
 
+    let scannerEdicao = null;
+
+    async function alternarCameraEdicao() {
+        const readerDiv = document.getElementById('readerEdicao');
+        
+        if (scannerEdicao) {
+            await scannerEdicao.stop();
+            scannerEdicao = null;
+            readerDiv.style.display = 'none';
+            return;
+        }
+    
+        readerDiv.style.display = 'block';
+        scannerEdicao = new Html5Qrcode("readerEdicao");
+        
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        
+        scannerEdicao.start(
+            { facingMode: "environment" }, 
+            config, 
+            codigo => {
+                buscarFamiliaPorCodigo(codigo);
+                alternarCameraEdicao(); // Desliga após ler
+            }
+        ).catch(err => console.error("Erro na câmera de edição:", err));
+    }
+
+    
 </script>
 
 <!-- Modal de Desconto Personalizado -->
