@@ -401,76 +401,58 @@
 <!-- View 4: Edição e Gestão de Produtos -->
 <div id="viewEdicao" class="secao-admin container-fluid mt-2">
     <div class="card shadow-sm border-0">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 text-primary fw-bold">✏️ Gestão de Coleções</h5>
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+            <h5 class="mb-0 text-primary fw-bold">✏️ Gestão e Edição de Produtos</h5>
             <button class="btn btn-sm btn-outline-secondary" onclick="mudarTela('viewPDV')">Sair</button>
         </div>
-        <div class="card-body">
-            <div class="row g-2 mb-4 bg-light p-3 rounded">
-                <div class="col-md-4">
+        <div class="card-body p-3">
+            <div class="row g-2 mb-3 bg-light p-3 rounded">
+                <div class="col-12 col-md-4">
+                    <label class="small fw-bold">Atalho por Código (Bipar):</label>
+                    <input type="text" id="inputBuscaEdicao" class="form-control form-control-sm text-uppercase" placeholder="Bipe para trazer a família..." onkeydown="if(event.key === 'Enter') buscarFamiliaPorCodigo(this.value)">
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
                     <label class="small fw-bold">Filtrar por Tipo:</label>
-                    <select id="selectTipoEdicao" class="form-select" onchange="atualizarModelosEdicao()">
+                    <select id="filtroTipoEdicao" class="form-select form-select-sm" onchange="atualizarSelectModelosEdicao()">
                         <option value="">Selecione o Tipo...</option>
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-12 col-sm-6 col-md-4">
                     <label class="small fw-bold">Filtrar por Modelo:</label>
-                    <select id="selectModeloEdicao" class="form-select" onchange="carregarFamiliaParaEdicao()">
+                    <select id="filtroModeloEdicao" class="form-select form-select-sm" onchange="carregarFamiliaPorFiltro()">
                         <option value="">Selecione o Modelo...</option>
                     </select>
                 </div>
-                <div class="col-md-4">
-                    <label class="small fw-bold">Busca Rápida (Bipe):</label>
-                    <input type="text" id="inputBuscaEdicao" class="form-control text-uppercase" placeholder="Bipar QR Code..." onkeypress="if(event.key==='Enter') buscarPorBipeEdicao(this.value)">
-                </div>
             </div>
 
-            <div id="containerEdicaoFamilia" class="oculto">
-                <div class="alert alert-primary py-2 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 fw-bold">EDIÇÃO DO MODELO: <span id="labelNomeModelo">---</span></h6>
-                    <span class="badge bg-dark" id="labelTipoModelo">---</span>
-                </div>
-
-                <div class="row g-3 mb-3 p-2 border rounded bg-white shadow-sm">
-                    <div class="col-md-6">
-                        <label class="small fw-bold text-danger">Novo Preço para TODA a Coleção (R$):</label>
-                        <div class="input-group">
-                            <input type="number" id="precoLote" class="form-control" step="0.01" placeholder="Deixe vazio para manter preços individuais">
-                            <button class="btn btn-danger" onclick="aplicarPrecoLote()">Aplicar em Todos</button>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="small fw-bold">Status da Coleção:</label>
-                        <select id="statusLote" class="form-select" onchange="aplicarStatusLote(this.value)">
-                            <option value="">Alterar Status de Todos...</option>
-                            <option value="Ativo">Marcar Todos como Ativos</option>
-                            <option value="Inativo">Inativar Coleção Inteira</option>
-                        </select>
+            <div id="painelFamiliaEdicao" class="oculto">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-secondary fw-bold m-0">Coleção: <span id="nomeColecaoAtiva" class="text-dark">---</span></h6>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="aplicarPrecoEmLote()">Preço em Lote (R$)</button>
                     </div>
                 </div>
 
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover align-middle border">
-                        <thead class="table-light">
+                <div class="table-responsive border rounded bg-white mb-3" style="max-height: 350px;">
+                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                        <thead class="table-dark sticky-top">
                             <tr>
+                                <th>Código</th>
                                 <th>Cor</th>
                                 <th>Tamanho</th>
-                                <th>Código</th>
-                                <th style="width: 120px;">Estoque</th>
-                                <th style="width: 120px;">Preço Unit.</th>
-                                <th>Status</th>
+                                <th style="width: 120px;">Preço (R$)</th>
+                                <th style="width: 100px;">Estoque</th>
+                                <th class="text-center" style="width: 80px;">Status</th>
                             </tr>
                         </thead>
-                        <tbody id="corpoEdicaoVariacoes">
+                        <tbody id="linhasFamiliaEdicao">
                             </tbody>
                     </table>
                 </div>
 
-                <div class="mt-4">
-                    <button class="btn btn-success btn-lg w-100 fw-bold shadow" onclick="salvarGestaoLote()">
-                        SALVAR TODAS AS ALTERAÇÕES DA FAMÍLIA
-                    </button>
-                </div>
+                <button onclick="salvarAlteracoesFamilia()" class="btn btn-success w-100 btn-lg fw-bold shadow-sm">
+                    SALVAR ALTERAÇÕES DA COLEÇÃO
+                </button>
             </div>
         </div>
     </div>
@@ -948,8 +930,7 @@
             // Inicializa o leitor do inventário se necessário
         } else if (tipo === 'edicao') {
             mudarTela('viewEdicao');
-            document.getElementById('formEdicao').classList.add('oculto');
-            document.getElementById('inputBuscaEdicao').focus();
+            inicializarFiltrosEdicao(); // CARREGA OS SELECTS DINAMICAMENTE
         }
     }
     
@@ -1317,90 +1298,153 @@
     }
 
 // FUNÇÕES PARA A TELA DE EDIÇÃO DE PRODUTOS
-    let itensEmEdicao = []; // Guardará os produtos da família selecionada
+    let familiaAtiva = []; // Armazena a lista de produtos da coleção sendo editada
 
-    // Alimenta os selects ao entrar na tela
-    function prepararTelaGestao() {
-        const tipos = [...new Set(estoqueLocal.map(p => p.tipo))].sort();
-        const selectTipo = document.getElementById('selectTipoEdicao');
-        selectTipo.innerHTML = '<option value="">Selecione o Tipo...</option>' + 
-            tipos.map(t => `<option value="${t}">${t}</option>`).join('');
+    // Popula o select de Tipos ao entrar na tela de edição
+    function inicializarFiltrosEdicao() {
+        const selectTipo = document.getElementById('filtroTipoEdicao');
+        selectTipo.innerHTML = '<option value="">Selecione o Tipo...</option>';
+        
+        // Pega os tipos únicos do seu estoqueLocal
+        const tiposUnicos = [...new Set(estoqueLocal.map(p => p.tipo))].sort();
+        tiposUnicos.forEach(tipo => {
+            if(tipo) selectTipo.innerHTML += `<option value="${tipo}">${tipo}</option>`;
+        });
+        
+        document.getElementById('filtroModeloEdicao').innerHTML = '<option value="">Selecione o Modelo...</option>';
+        document.getElementById('painelFamiliaEdicao').classList.add('oculto');
     }
     
-    function atualizarModelosEdicao() {
-        const tipoSelected = document.getElementById('selectTipoEdicao').value;
-        const modelos = [...new Set(estoqueLocal.filter(p => p.tipo === tipoSelected).map(p => p.nome))].sort();
-        const selectMod = document.getElementById('selectModeloEdicao');
-        selectMod.innerHTML = '<option value="">Selecione o Modelo...</option>' + 
-            modelos.map(m => `<option value="${m}">${m}</option>`).join('');
+    // Atualiza o select de modelos com base no tipo selecionado
+    function atualizarSelectModelosEdicao() {
+        const tipoSelecionado = document.getElementById('filtroTipoEdicao').value;
+        const selectModelo = document.getElementById('filtroModeloEdicao');
+        selectModelo.innerHTML = '<option value="">Selecione o Modelo...</option>';
+        
+        if (!tipoSelecionado) return;
+    
+        // Filtra modelos únicos que pertencem àquele tipo
+        const modelosFiltrados = [...new Set(
+            estoqueLocal
+                .filter(p => p.tipo === tipoSelecionado)
+                .map(p => p.nome)
+        )].sort();
+    
+        modelosFiltrados.forEach(modelo => {
+            if(modelo) selectModelo.innerHTML += `<option value="${modelo}">${modelo}</option>`;
+        });
     }
     
-    // Se o usuário bipar, o sistema descobre qual é a família e carrega
-    function buscarPorBipeEdicao(codigo) {
-        const item = estoqueLocal.find(p => p.codigo === codigo.toUpperCase());
-        if (item) {
-            document.getElementById('selectTipoEdicao').value = item.tipo;
-            atualizarModelosEdicao();
-            document.getElementById('selectModeloEdicao').value = item.nome;
-            carregarFamiliaParaEdicao();
+    // Carrega os dados na tabela com base nos filtros selecionados
+    function carregarFamiliaPorFiltro() {
+        const tipo = document.getElementById('filtroTipoEdicao').value;
+        const modelo = document.getElementById('filtroModeloEdicao').value;
+        if (!tipo || !modelo) return;
+    
+        familiaAtiva = estoqueLocal.filter(p => p.tipo === tipo && p.nome === modelo);
+        renderizarTabelaFamilia(`${tipo} - ${modelo}`);
+    }
+    
+    // ATALHO: Bipa o código, descobre a família e carrega tudo
+    function buscarFamiliaPorCodigo(codigo) {
+        if (!codigo) return;
+        const cod = codigo.trim().toUpperCase();
+        const produtoReferencia = estoqueLocal.find(p => p.codigo === cod);
+    
+        if (produtoReferencia) {
             playBeep();
+            // Seta os selects para sincronizar com a busca do QR
+            document.getElementById('filtroTipoEdicao').value = produtoReferencia.tipo;
+            atualizarSelectModelosEdicao();
+            document.getElementById('filtroModeloEdicao').value = produtoReferencia.nome;
+            
+            // Filtra toda a família deste item
+            familiaAtiva = estoqueLocal.filter(p => p.tipo === produtoReferencia.tipo && p.nome === produtoReferencia.nome);
+            renderizarTabelaFamilia(`${produtoReferencia.tipo} - ${produtoReferencia.nome}`);
+            document.getElementById('inputBuscaEdicao').value = ""; // Limpa campo de busca
         } else {
-            mostrarAviso("Código não encontrado!", "error");
+            mostrarAviso("Código não cadastrado no estoque!", "error");
         }
     }
     
-    function carregarFamiliaParaEdicao() {
-        const tipo = document.getElementById('selectTipoEdicao').value;
-        const nome = document.getElementById('selectModeloEdicao').value;
-        
-        if (!tipo || !nome) return;
+    // Renderiza os inputs de edição na tabela
+    function renderizarTabelaFamilia(tituloColecao) {
+        document.getElementById('nomeColecaoAtiva').innerText = tituloColecao;
+        const corpo = document.getElementById('linhasFamiliaEdicao');
+        corpo.innerHTML = "";
     
-        itensEmEdicao = JSON.parse(JSON.stringify(estoqueLocal.filter(p => p.tipo === tipo && p.nome === nome)));
+        familiaAtiva.forEach((item, index) => {
+            const statusChecked = item.status !== "Inativo" ? "checked" : "";
+            corpo.innerHTML += `
+                <tr>
+                    <td><small class="text-muted">${item.codigo}</small></td>
+                    <td><strong>${item.cor || "Padrão"}</strong></td>
+                    <td><span class="badge bg-secondary">${item.tamanho || "U"}</span></td>
+                    <td>
+                        <input type="number" step="0.01" class="form-control form-control-sm" 
+                            id="editPreco_${index}" value="${item.preco}" style="min-width: 80px;">
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm" 
+                            id="editEstoque_${index}" value="${item.quantidade}" style="min-width: 70px;">
+                    </td>
+                    <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                            <input class="form-check-input" type="checkbox" id="editStatus_${index}" ${statusChecked}>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
     
-        document.getElementById('labelNomeModelo').innerText = nome;
-        document.getElementById('labelTipoModelo').innerText = tipo;
-        document.getElementById('containerEdicaoFamilia').classList.remove('oculto');
-        
-        renderizarVariacoesEdicao();
+        document.getElementById('painelFamiliaEdicao').classList.remove('oculto');
     }
     
-    function renderizarVariacoesEdicao() {
-        const corpo = document.getElementById('corpoEdicaoVariacoes');
-        corpo.innerHTML = itensEmEdicao.map((item, idx) => `
-            <tr>
-                <td>${item.cor}</td>
-                <td><strong>${item.tamanho}</strong></td>
-                <td><small class="text-muted">${item.codigo}</small></td>
-                <td>
-                    <input type="number" class="form-control form-control-sm" value="${item.quantidade}" 
-                        onchange="itensEmEdicao[${idx}].quantidade = parseInt(this.value)">
-                </td>
-                <td>
-                    <input type="number" class="form-control form-control-sm input-preco-edit" value="${item.preco}" 
-                        onchange="itensEmEdicao[${idx}].preco = parseFloat(this.value)">
-                </td>
-                <td>
-                    <select class="form-select form-select-sm select-status-edit" onchange="itensEmEdicao[${idx}].status = this.value">
-                        <option value="Ativo" ${item.status !== 'Inativo' ? 'selected' : ''}>Ativo</option>
-                        <option value="Inativo" ${item.status === 'Inativo' ? 'selected' : ''}>Inativo</option>
-                    </select>
-                </td>
-            </tr>
-        `).join('');
+    // Facilidade extra: aplicar preço para todos ao mesmo tempo
+    function aplicarPrecoEmLote() {
+        const novoPreco = prompt("Digite o preço padrão para toda a coleção:");
+        if (novoPreco === null || isNaN(parseFloat(novoPreco))) return;
+    
+        familiaAtiva.forEach((_, index) => {
+            document.getElementById(`editPreco_${index}`).value = parseFloat(novoPreco).toFixed(2);
+        });
     }
     
-    // Funções de Lote
-    function aplicarPrecoLote() {
-        const novoPreco = parseFloat(document.getElementById('precoLote').value);
-        if (isNaN(novoPreco)) return;
-        itensEmEdicao.forEach(item => item.preco = novoPreco);
-        renderizarVariacoesEdicao();
-    }
+    // Coleta as alterações feitas na tela e envia ao back-end
+    async function salvarAlteracoesFamilia() {
+        const itensModificados = familiaAtiva.map((item, index) => {
+            return {
+                codigo: item.codigo,
+                preco: parseFloat(document.getElementById(`editPreco_${index}`).value) || 0,
+                quantidade: parseInt(document.getElementById(`editEstoque_${index}`).value) || 0,
+                status: document.getElementById(`editStatus_${index}`).checked ? "Ativo" : "Inativo"
+            };
+        });
     
-    function aplicarStatusLote(status) {
-        if (!status) return;
-        itensEmEdicao.forEach(item => item.status = status);
-        renderizarVariacoesEdicao();
+        const payload = {
+            acao: 'editarProdutosLote',
+            dados: {
+                itens: itensModificados,
+                vendedor: vendedorLogado
+            }
+        };
+    
+        exibirLoader(true, "Atualizando coleção...");
+        try {
+            const response = await fetch(URL_API, { method: 'POST', body: JSON.stringify(payload) });
+            const res = await response.json();
+            if (res.sucesso) {
+                mostrarAviso("Coleção atualizada com sucesso!");
+                await carregarEstoqueInicial(); // Sincroniza dados locais
+                document.getElementById('painelFamiliaEdicao').classList.add('oculto');
+            } else {
+                mostrarAviso("Erro ao salvar: " + res.erro, "error");
+            }
+        } catch (e) {
+            mostrarAviso("Erro de conexão.", "error");
+        } finally {
+            exibirLoader(false);
+        }
     }
 
 </script>
