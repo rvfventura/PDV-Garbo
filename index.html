@@ -1317,53 +1317,90 @@
     }
 
 // FUNÇÕES PARA A TELA DE EDIÇÃO DE PRODUTOS
-    let produtoSelecionadoEdicao = null;
+    let itensEmEdicao = []; // Guardará os produtos da família selecionada
 
-    function buscarParaEdicao(codigo) {
-        if (!codigo) return;
-        const cod = codigo.trim().toUpperCase();
-        const produto = estoqueLocal.find(p => p.codigo === cod);
+    // Alimenta os selects ao entrar na tela
+    function prepararTelaGestao() {
+        const tipos = [...new Set(estoqueLocal.map(p => p.tipo))].sort();
+        const selectTipo = document.getElementById('selectTipoEdicao');
+        selectTipo.innerHTML = '<option value="">Selecione o Tipo...</option>' + 
+            tipos.map(t => `<option value="${t}">${t}</option>`).join('');
+    }
     
-        if (produto) {
-            produtoSelecionadoEdicao = produto;
-            document.getElementById('editNome').value = produto.nome || produto.nomeCombinado;
-            document.getElementById('editPreco').value = produto.preco;
-            document.getElementById('editEstoque').value = produto.quantidade;
-            document.getElementById('editTamanho').value = produto.tamanho || "";
-            document.getElementById('editStatus').checked = produto.status !== "Inativo";
-            
-            document.getElementById('formEdicao').classList.remove('oculto');
+    function atualizarModelosEdicao() {
+        const tipoSelected = document.getElementById('selectTipoEdicao').value;
+        const modelos = [...new Set(estoqueLocal.filter(p => p.tipo === tipoSelected).map(p => p.nome))].sort();
+        const selectMod = document.getElementById('selectModeloEdicao');
+        selectMod.innerHTML = '<option value="">Selecione o Modelo...</option>' + 
+            modelos.map(m => `<option value="${m}">${m}</option>`).join('');
+    }
+    
+    // Se o usuário bipar, o sistema descobre qual é a família e carrega
+    function buscarPorBipeEdicao(codigo) {
+        const item = estoqueLocal.find(p => p.codigo === codigo.toUpperCase());
+        if (item) {
+            document.getElementById('selectTipoEdicao').value = item.tipo;
+            atualizarModelosEdicao();
+            document.getElementById('selectModeloEdicao').value = item.nome;
+            carregarFamiliaParaEdicao();
             playBeep();
         } else {
-            mostrarAviso("Produto não encontrado!", "error");
+            mostrarAviso("Código não encontrado!", "error");
         }
     }
     
-    async function salvarAlteracoes() {
-        const payload = {
-            acao: 'editarProdutoManual',
-            dados: {
-                codigo: produtoSelecionadoEdicao.codigo,
-                nome: document.getElementById('editNome').value,
-                preco: parseFloat(document.getElementById('editPreco').value),
-                quantidade: parseInt(document.getElementById('editEstoque').value),
-                status: document.getElementById('editStatus').checked ? "Ativo" : "Inativo",
-                vendedor: vendedorLogado
-            }
-        };
+    function carregarFamiliaParaEdicao() {
+        const tipo = document.getElementById('selectTipoEdicao').value;
+        const nome = document.getElementById('selectModeloEdicao').value;
+        
+        if (!tipo || !nome) return;
     
-        exibirLoader(true, "Salvando...");
-        try {
-            const response = await fetch(URL_API, { method: 'POST', body: JSON.stringify(payload) });
-            const res = await response.json();
-            if (res.sucesso) {
-                mostrarAviso("Alterações salvas!");
-                await carregarEstoqueInicial(); // Atualiza o cache local
-                document.getElementById('formEdicao').classList.add('oculto');
-            }
-        } catch (e) {
-            mostrarAviso("Erro ao salvar.", "error");
-        } finally { exibirLoader(false); }
+        itensEmEdicao = JSON.parse(JSON.stringify(estoqueLocal.filter(p => p.tipo === tipo && p.nome === nome)));
+    
+        document.getElementById('labelNomeModelo').innerText = nome;
+        document.getElementById('labelTipoModelo').innerText = tipo;
+        document.getElementById('containerEdicaoFamilia').classList.remove('oculto');
+        
+        renderizarVariacoesEdicao();
+    }
+    
+    function renderizarVariacoesEdicao() {
+        const corpo = document.getElementById('corpoEdicaoVariacoes');
+        corpo.innerHTML = itensEmEdicao.map((item, idx) => `
+            <tr>
+                <td>${item.cor}</td>
+                <td><strong>${item.tamanho}</strong></td>
+                <td><small class="text-muted">${item.codigo}</small></td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" value="${item.quantidade}" 
+                        onchange="itensEmEdicao[${idx}].quantidade = parseInt(this.value)">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm input-preco-edit" value="${item.preco}" 
+                        onchange="itensEmEdicao[${idx}].preco = parseFloat(this.value)">
+                </td>
+                <td>
+                    <select class="form-select form-select-sm select-status-edit" onchange="itensEmEdicao[${idx}].status = this.value">
+                        <option value="Ativo" ${item.status !== 'Inativo' ? 'selected' : ''}>Ativo</option>
+                        <option value="Inativo" ${item.status === 'Inativo' ? 'selected' : ''}>Inativo</option>
+                    </select>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    // Funções de Lote
+    function aplicarPrecoLote() {
+        const novoPreco = parseFloat(document.getElementById('precoLote').value);
+        if (isNaN(novoPreco)) return;
+        itensEmEdicao.forEach(item => item.preco = novoPreco);
+        renderizarVariacoesEdicao();
+    }
+    
+    function aplicarStatusLote(status) {
+        if (!status) return;
+        itensEmEdicao.forEach(item => item.status = status);
+        renderizarVariacoesEdicao();
     }
 
 </script>
