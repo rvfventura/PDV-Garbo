@@ -1306,18 +1306,15 @@
 
     // Popula o select de Tipos ao entrar na tela de edição
     function inicializarFiltrosEdicao() {
-        // 1. Captura os elementos pelos IDs corretos
         const selectTipo = document.getElementById('filtroTipoEdicao');
         const selectModelo = document.getElementById('filtroModeloEdicao');
         
         if (!selectTipo) return;
     
-        // Limpa os campos antes de preencher
         selectTipo.innerHTML = '<option value="">Selecione o Tipo...</option>';
         selectModelo.innerHTML = '<option value="">Selecione o Modelo...</option>';
         
-        // 2. Extrai tipos únicos do estoqueLocal (usando a propriedade 'tipo')
-        // Usamos o Set para não repetir e sort() para alfabetizar
+        // Extrai os tipos do estoqueLocal
         const tiposUnicos = [...new Set(estoqueLocal.map(p => p.tipo))].filter(Boolean).sort();
         
         tiposUnicos.forEach(tipo => {
@@ -1327,9 +1324,8 @@
             selectTipo.appendChild(option);
         });
         
-        // Garante que o painel de edição comece escondido
+        // Esconde o painel de edição até que algo seja selecionado ou bipado
         document.getElementById('painelFamiliaEdicao').classList.add('oculto');
-        console.log("Filtros de edição inicializados com", tiposUnicos.length, "tipos.");
     }
     
     // Atualiza o select de modelos com base no tipo selecionado
