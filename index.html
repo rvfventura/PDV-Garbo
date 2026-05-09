@@ -440,16 +440,16 @@
                     </div>
                 </div>
 
-                <div class="table-responsive border rounded bg-white mb-3" style="max-height: 350px;">
-                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                <div class="table-responsive border rounded bg-white mb-3" style="max-height: 450px;">
+                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
                         <thead class="table-dark sticky-top">
                             <tr>
-                                <th>Código</th>
-                                <th>Cor</th>
-                                <th>Tamanho</th>
-                                <th style="width: 120px;">Preço (R$)</th>
-                                <th style="width: 100px;">Estoque</th>
-                                <th class="text-center" style="width: 80px;">Status</th>
+                                <th onclick="ordenarFamilia('nomeCombinado')" style="cursor:pointer">Nome Combinado ↕️</th>
+                                <th onclick="ordenarFamilia('codigo')" style="cursor:pointer">Cód ↕️</th>
+                                <th onclick="ordenarFamilia('tamanho')" style="cursor:pointer">Tam ↕️</th>
+                                <th style="width: 110px;">Preço (R$)</th>
+                                <th style="width: 90px;">Estoque</th>
+                                <th class="text-center">Status</th>
                             </tr>
                         </thead>
                         <tbody id="linhasFamiliaEdicao">
@@ -1362,29 +1362,22 @@
     
     // Atualiza o select de modelos com base no tipo selecionado
     function atualizarSelectModelosEdicao() {
-        const tipoSelecionado = document.getElementById('filtroTipoEdicao').value;
+        const tipo = document.getElementById('filtroTipoEdicao').value;
         const selectModelo = document.getElementById('filtroModeloEdicao');
         
-        if (!tipoSelecionado) {
+        if (!tipo) {
             document.getElementById('painelFamiliaEdicao').classList.add('oculto');
             return;
         }
     
-        // 1. Filtra os modelos únicos para o select
-        const modelosFiltrados = [...new Set(
-            estoqueLocal
-                .filter(p => p.tipo === tipoSelecionado)
-                .map(p => p.nome)
-        )].sort();
-    
+        // Filtra modelos para o segundo select
+        const modelos = [...new Set(estoqueLocal.filter(p => p.tipo === tipo).map(p => p.nome))].sort();
         selectModelo.innerHTML = '<option value="">Todos os Modelos...</option>';
-        modelosFiltrados.forEach(modelo => {
-            if(modelo) selectModelo.innerHTML += `<option value="${modelo}">${modelo}</option>`;
-        });
+        modelos.forEach(m => selectModelo.innerHTML += `<option value="${m}">${m}</option>`);
     
-        // 2. EXIBE LOGO A LISTA: Carrega todos os itens desse TIPO
-        familiaAtiva = estoqueLocal.filter(p => p.tipo === tipoSelecionado);
-        renderizarTabelaFamilia(`Tipo: ${tipoSelecionado}`);
+        // GATILHO ESCADA: Carrega todos do tipo imediatamente
+        familiaAtiva = estoqueLocal.filter(p => p.tipo === tipo);
+        renderizarTabelaFamilia(`Coleção: ${tipo}`);
     }
     
     // Carrega os dados na tabela com base nos filtros selecionados
@@ -1430,29 +1423,53 @@
     }
     
     // Renderiza os inputs de edição na tabela
-    function renderizarTabelaFamilia(tituloColecao) {
-        document.getElementById('nomeColecaoAtiva').innerText = tituloColecao;
+    let ordemAtual = { campo: '', ascendente: true };
+
+    function ordenarFamilia(campo) {
+        // Alterna entre ascendente e descendente
+        if (ordemAtual.campo === campo) {
+            ordemAtual.ascendente = !ordemAtual.ascendente;
+        } else {
+            ordemAtual.campo = campo;
+            ordemAtual.ascendente = true;
+        }
+    
+        familiaAtiva.sort((a, b) => {
+            let valA = a[campo] ? a[campo].toString().toUpperCase() : '';
+            let valB = b[campo] ? b[campo].toString().toUpperCase() : '';
+            
+            // Lógica específica para tamanhos (P, M, G) se necessário, 
+            // ou ordenação alfanumérica simples:
+            return ordemAtual.ascendente 
+                ? valA.localeCompare(valB, undefined, {numeric: true}) 
+                : valB.localeCompare(valA, undefined, {numeric: true});
+        });
+    
+        renderizarTabelaFamilia(document.getElementById('nomeColecaoAtiva').innerText);
+    }
+    
+    function renderizarTabelaFamilia(titulo) {
+        document.getElementById('nomeColecaoAtiva').innerText = titulo;
         const corpo = document.getElementById('linhasFamiliaEdicao');
         corpo.innerHTML = "";
     
         familiaAtiva.forEach((item, index) => {
             const statusChecked = item.status !== "Inativo" ? "checked" : "";
             
-            // CORREÇÃO: Usando os nomes exatos das propriedades da sua planilha
-            const corExibicao = item.cor || "---"; 
-            
             corpo.innerHTML += `
                 <tr>
+                    <td>
+                        <div class="fw-bold text-truncate" style="max-width: 180px;">${item.nomeCombinado}</div>
+                    </td>
                     <td><small class="text-muted">${item.codigo}</small></td>
-                    <td><strong>${corExibicao}</strong></td>
-                    <td><span class="badge bg-secondary">${item.tamanho || "U"}</span></td>
+                    <td><span class="badge bg-light text-dark border">${item.tamanho || "U"}</span></td>
                     <td>
                         <input type="number" step="0.01" class="form-control form-control-sm" 
-                            id="editPreco_${index}" value="${item.preco}" style="min-width: 80px;">
+                            id="editPreco_${index}" value="${item.preco}">
                     </td>
                     <td>
                         <input type="number" class="form-control form-control-sm" 
-                            id="editEstoque_${index}" value="${item.quantidade}" style="min-width: 70px;">
+                            id="editEstoque_${index}" value="${item.quantidade}">
                     </td>
                     <td class="text-center">
                         <div class="form-check form-switch d-inline-block">
@@ -1462,6 +1479,7 @@
                 </tr>
             `;
         });
+    
         document.getElementById('painelFamiliaEdicao').classList.remove('oculto');
     }
     
