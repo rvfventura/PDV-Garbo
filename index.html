@@ -468,8 +468,8 @@
                     </table>
                 </div>
 
-                <button onclick="salvarAlteracoesFamilia()" class="btn btn-success w-100 btn-lg fw-bold shadow-sm">
-                    SALVAR ALTERAÇÕES DA COLEÇÃO
+                <button class="btn btn-success w-100 py-3 fw-bold" onclick="salvarAlteracoesFamilia()">
+                    💾 SALVAR TODAS AS ALTERAÇÕES DA LISTA
                 </button>
             </div>
         </div>
@@ -1522,41 +1522,54 @@
     
     // Coleta as alterações feitas na tela e envia ao back-end
     async function salvarAlteracoesFamilia() {
-        const itensModificados = familiaAtiva.map((item, index) => {
-            return {
-                codigo: item.codigo,
-                preco: parseFloat(document.getElementById(`editPreco_${index}`).value) || 0,
-                quantidade: parseInt(document.getElementById(`editEstoque_${index}`).value) || 0,
-                status: document.getElementById(`editStatus_${index}`).checked ? "Ativo" : "Inativo"
-            };
-        });
+        if (familiaAtiva.length === 0) return;
     
-        const payload = {
-            acao: 'editarProdutosLote',
-            dados: {
-                itens: itensModificados,
-                vendedor: vendedorLogado
-            }
-        };
+        const confirmacao = confirm(`Deseja salvar as alterações para os ${familiaAtiva.length} itens desta lista?`);
+        if (!confirmacao) return;
     
-        exibirLoader(true, "Atualizando coleção...");
+        exibirLoader(true, "Salvando alterações...");
+    
         try {
-            const response = await fetch(URL_API, { method: 'POST', body: JSON.stringify(payload) });
+            // Prepara os dados lendo os inputs da tabela
+            const dadosParaSalvar = familiaAtiva.map((item, index) => {
+                const novoPreco = document.getElementById(`editPreco_${index}`).value;
+                const novoEstoque = document.getElementById(`editEstoque_${index}`).value;
+                const novoStatus = document.getElementById(`editStatus_${index}`).checked ? "Ativo" : "Inativo";
+    
+                return {
+                    codigo: item.codigo,
+                    preco: parseFloat(novoPreco),
+                    quantidade: parseInt(novoEstoque),
+                    status: novoStatus
+                };
+            });
+    
+            const response = await fetch(URL_API, {
+                method: 'POST',
+                body: JSON.stringify({
+                    acao: 'salvarAlteracoesEstoque',
+                    lista: dadosParaSalvar
+                })
+            });
+    
             const res = await response.json();
+    
             if (res.sucesso) {
-                mostrarAviso("Coleção atualizada com sucesso!");
-                await carregarEstoqueInicial(); // Sincroniza dados locais
+                mostrarAviso("Planilha atualizada com sucesso!");
+                // IMPORTANTE: Atualiza o estoque local para refletir as mudanças sem precisar recarregar tudo
+                await carregarEstoqueInicial(); 
                 document.getElementById('painelFamiliaEdicao').classList.add('oculto');
             } else {
-                mostrarAviso("Erro ao salvar: " + res.erro, "error");
+                throw new Error(res.erro);
             }
         } catch (e) {
-            mostrarAviso("Erro de conexão.", "error");
+            console.error("Erro ao salvar:", e);
+            mostrarAviso("Erro ao salvar alterações: " + e.message, "error");
         } finally {
             exibirLoader(false);
         }
     }
-
+    
     let scannerEdicao = null;
 
     async function alternarCameraEdicao() {
