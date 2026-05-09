@@ -1252,17 +1252,24 @@
         // 2. Inativação Automática (Saída ou Balanço Zerado)
         if (tipoAjuste === 'saida' || tipoAjuste === 'balanco') {
             const ficaraoZerados = itensInventario.filter(item => {
-                const estoqueAtual = item.quantidade || 0;
-                const qtdAjuste = item.quantidadeAjuste || 0;
-                return tipoAjuste === 'balanco' ? qtdAjuste === 0 : (estoqueAtual - qtdAjuste) <= 0;
+                // No inventário, 'item.quantidade' é o valor que você bipou/digitou
+                // 'item.quantidadeOriginal' (ou o valor vindo do estoqueLocal) é o que tinha antes
+                const estoqueAtualPlanilha = item.quantidadeOriginal || 0; 
+                const valorBipado = item.quantidade || 0;
+    
+                if (tipoAjuste === 'balanco') {
+                    return valorBipado === 0;
+                } else {
+                    return (estoqueAtualPlanilha - valorBipado) <= 0;
+                }
             });
     
             if (ficaraoZerados.length > 0) {
                 if (confirm(`Atenção: ${ficaraoZerados.length} itens ficarão com estoque ZERADO. Deseja INATIVÁ-LOS automaticamente?`)) {
                     itensInventario.forEach(item => {
-                        const estoqueAtual = item.quantidade || 0;
-                        const qtdAjuste = item.quantidadeAjuste || 0;
-                        const zerou = tipoAjuste === 'balanco' ? qtdAjuste === 0 : (estoqueAtual - qtdAjuste) <= 0;
+                        const estoqueAtualPlanilha = item.quantidadeOriginal || 0;
+                        const valorBipado = item.quantidade || 0;
+                        const zerou = tipoAjuste === 'balanco' ? valorBipado === 0 : (estoqueAtualPlanilha - valorBipado) <= 0;
                         if (zerou) item.status = "Inativo";
                     });
                 }
