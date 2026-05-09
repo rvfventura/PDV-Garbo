@@ -543,11 +543,26 @@
             if (res.sucesso) {
                 // Filtra e mapeia injetando Tipo e Cor através do nomeCombinado
                 estoqueLocal = res.lista.filter(item => item.codigo && item.codigo.trim() !== "").map(item => {
-                    const partes = item.nomeCombinado ? item.nomeCombinado.split(" ") : [];
+                    // .trim() remove espaços no início e fim
+                    // .split(/\s+/) divide por qualquer quantidade de espaços (um ou vários)
+                    // .filter(Boolean) remove entradas vazias da lista
+                    const partes = item.nomeCombinado ? item.nomeCombinado.trim().split(/\s+/).filter(Boolean) : [];
+                    
+                    // Lógica Inteligente:
+                    const tipo = partes.length > 0 ? partes[0] : "Geral";
+                    
+                    // A cor será SEMPRE a última palavra, desde que haja mais de uma
+                    const cor = partes.length >= 2 ? partes[partes.length - 1] : "Padrão";
+                    
+                    // O nome será tudo o que estiver entre o primeiro e o último (caso o nome tenha mais de uma palavra)
+                    // Ex: "VESTIDO LONGO FESTA PRETO" -> Tipo: VESTIDO | Nome: LONGO FESTA | Cor: PRETO
+                    const nome = partes.length > 2 ? partes.slice(1, -1).join(" ") : (partes[1] || item.nome);
+                
                     return {
                         ...item,
-                        tipo: partes[0] || "Geral",
-                        cor: partes.length > 1 ? partes[partes.length - 1] : "Padrão"
+                        tipo: tipo,
+                        cor: cor,
+                        nomeTratado: nome // Nome limpo sem o tipo e sem a cor
                     };
                 });
 
