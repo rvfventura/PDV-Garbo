@@ -1715,7 +1715,39 @@
         ).catch(err => console.error("Erro na câmera de edição:", err));
     }
 
+    //funções do modal de conirms
+    // --- VARIÁVEL GLOBAL PARA O MODAL DE CONFIRMAÇÃO ---
+    let acaoConfirmacaoPendente = null;
     
+    // --- FUNÇÃO CORINGA PARA EXIBIR CONFIRMAÇÕES ---
+    function exibirConfirmacao(titulo, mensagem, callback) {
+        document.getElementById('confirmTitle').innerText = titulo;
+        document.getElementById('confirmMessage').innerText = mensagem;
+        document.getElementById('modalConfirm').classList.remove('oculto');
+        
+        // Armazenamos a função que será executada no clique do SIM
+        acaoConfirmacaoPendente = callback;
+    }
+    
+    // --- FUNÇÃO PARA FECHAR O MODAL DE CONFIRMAÇÃO ---
+    function fecharModalConfirm() {
+        document.getElementById('modalConfirm').classList.add('oculto');
+        acaoConfirmacaoPendente = null;
+    }
+    
+    // --- VINCULAR O CLIQUE DO BOTÃO "SIM" DO MODAL ---
+    // Adicione esta linha dentro do seu window.onload atual ou logo abaixo das funções
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnSim = document.getElementById('btnConfirmSim');
+        if(btnSim) {
+            btnSim.onclick = () => {
+                if (typeof acaoConfirmacaoPendente === 'function') {
+                    acaoConfirmacaoPendente();
+                }
+                fecharModalConfirm();
+            };
+        }
+    });
 </script>
 
 <!-- Modal de Desconto Personalizado -->
