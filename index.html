@@ -1373,22 +1373,33 @@
     
     // Atualiza o select de modelos com base no tipo selecionado
     function atualizarSelectModelosEdicao() {
-        const tipo = document.getElementById('filtroTipoEdicao').value;
+        const tipoSelecionado = document.getElementById('filtroTipoEdicao').value;
         const selectModelo = document.getElementById('filtroModeloEdicao');
         
-        if (!tipo) {
+        if (!tipoSelecionado) {
             document.getElementById('painelFamiliaEdicao').classList.add('oculto');
             return;
         }
     
-        // Filtra modelos para o segundo select
-        const modelos = [...new Set(estoqueLocal.filter(p => p.tipo === tipo).map(p => p.nome))].sort();
-        selectModelo.innerHTML = '<option value="">Todos os Modelos...</option>';
-        modelos.forEach(m => selectModelo.innerHTML += `<option value="${m}">${m}</option>`);
+        // 1. Filtra os modelos, limpa espaços e padroniza para Maiúsculas
+        const modelosFiltrados = [...new Set(
+            estoqueLocal
+                .filter(p => p.tipo === tipoSelecionado)
+                .map(p => p.nome ? p.nome.trim().toUpperCase() : "")
+        )].filter(Boolean).sort();
     
-        // GATILHO ESCADA: Carrega todos do tipo imediatamente
-        familiaAtiva = estoqueLocal.filter(p => p.tipo === tipo);
-        renderizarTabelaFamilia(`Coleção: ${tipo}`);
+        // 2. Preenche o select sem duplicatas
+        selectModelo.innerHTML = '<option value="">Todos os Modelos...</option>';
+        modelosFiltrados.forEach(modelo => {
+            const option = document.createElement('option');
+            option.value = modelo;
+            option.text = modelo;
+            selectModelo.appendChild(option);
+        });
+    
+        // 3. Exibe logo a lista do Tipo selecionado
+        familiaAtiva = estoqueLocal.filter(p => p.tipo === tipoSelecionado);
+        renderizarTabelaFamilia(`Coleção: ${tipoSelecionado}`);
     }
     
     // Carrega os dados na tabela com base nos filtros selecionados
