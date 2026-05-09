@@ -1314,7 +1314,6 @@
         if (!codigo) return;
         const cod = codigo.trim().toUpperCase();
         
-        // Toca o beep imediatamente ao identificar um código
         playBeep(); 
     
         const itemExistente = itensInventario.find(item => item.codigo === cod);
@@ -1329,8 +1328,11 @@
                     codigo: cod,
                     nome: infoProduto.nome,
                     nomeCombinado: infoProduto.nomeCombinado,
-                    tamanho: infoProduto.tamanho || "", // Garante que o tamanho seja capturado
-                    quantidade: 1
+                    tamanho: infoProduto.tamanho || "",
+                    quantidade: 1,
+                    // --- INCLUSÕES NECESSÁRIAS PARA A LÓGICA DE STATUS ---
+                    status: infoProduto.status || "Ativo", // Guarda o status atual
+                    quantidadeOriginal: infoProduto.quantidade || 0 // Guarda o estoque atual para o cálculo de saída
                 });
             } else {
                 mostrarAviso("Produto " + cod + " não encontrado!", "error");
