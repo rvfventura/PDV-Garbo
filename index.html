@@ -410,7 +410,10 @@
                 <div class="col-12 col-md-4">
                     <label class="small fw-bold">Atalho por QR Code:</label>
                     <div class="d-flex gap-2">
-                        <input type="text" id="inputBuscaEdicao" class="form-control form-control-sm text-uppercase" placeholder="Código...">
+                        <input type="text" id="inputBuscaEdicao" 
+                           class="form-control form-control-sm text-uppercase" 
+                           placeholder="Código..." 
+                           onkeydown="if(event.key === 'Enter') { buscarFamiliaPorCodigo(this.value); this.value = ''; }">
                         <button class="btn btn-sm btn-primary" onclick="alternarCameraEdicao()">📷</button>
                     </div>
                     <div id="readerEdicao" class="mt-2 border rounded" style="display:none;"></div>
@@ -1346,30 +1349,45 @@
     function atualizarSelectModelosEdicao() {
         const tipoSelecionado = document.getElementById('filtroTipoEdicao').value;
         const selectModelo = document.getElementById('filtroModeloEdicao');
-        selectModelo.innerHTML = '<option value="">Selecione o Modelo...</option>';
         
-        if (!tipoSelecionado) return;
+        if (!tipoSelecionado) {
+            document.getElementById('painelFamiliaEdicao').classList.add('oculto');
+            return;
+        }
     
-        // Filtra modelos únicos que pertencem àquele tipo
+        // 1. Filtra os modelos únicos para o select
         const modelosFiltrados = [...new Set(
             estoqueLocal
                 .filter(p => p.tipo === tipoSelecionado)
                 .map(p => p.nome)
         )].sort();
     
+        selectModelo.innerHTML = '<option value="">Todos os Modelos...</option>';
         modelosFiltrados.forEach(modelo => {
             if(modelo) selectModelo.innerHTML += `<option value="${modelo}">${modelo}</option>`;
         });
+    
+        // 2. EXIBE LOGO A LISTA: Carrega todos os itens desse TIPO
+        familiaAtiva = estoqueLocal.filter(p => p.tipo === tipoSelecionado);
+        renderizarTabelaFamilia(`Tipo: ${tipoSelecionado}`);
     }
     
     // Carrega os dados na tabela com base nos filtros selecionados
     function carregarFamiliaPorFiltro() {
         const tipo = document.getElementById('filtroTipoEdicao').value;
         const modelo = document.getElementById('filtroModeloEdicao').value;
-        if (!tipo || !modelo) return;
+        
+        if (!tipo) return;
     
-        familiaAtiva = estoqueLocal.filter(p => p.tipo === tipo && p.nome === modelo);
-        renderizarTabelaFamilia(`${tipo} - ${modelo}`);
+        if (modelo === "") {
+            // Se escolheu "Todos os Modelos", mostra tudo do tipo
+            familiaAtiva = estoqueLocal.filter(p => p.tipo === tipo);
+            renderizarTabelaFamilia(`Tipo: ${tipo}`);
+        } else {
+            // Se escolheu um modelo específico, refina a busca
+            familiaAtiva = estoqueLocal.filter(p => p.tipo === tipo && p.nome === modelo);
+            renderizarTabelaFamilia(`${tipo} - ${modelo}`);
+        }
     }
     
     // ATALHO: Bipa o código, descobre a família e carrega tudo
@@ -1381,21 +1399,18 @@
         if (produtoRef) {
             playBeep();
             
-            // Sincroniza os selects
+            // Sincroniza o select de Tipo
             document.getElementById('filtroTipoEdicao').value = produtoRef.tipo;
+            
+            // Atualiza a lista de modelos baseada no tipo e seleciona o modelo específico
             atualizarSelectModelosEdicao();
             document.getElementById('filtroModeloEdicao').value = produtoRef.nome;
             
-            // Filtra a família
+            // Filtra a família pelo modelo do código lido
             familiaAtiva = estoqueLocal.filter(p => p.tipo === produtoRef.tipo && p.nome === produtoRef.nome);
-            
-            // CORREÇÃO: Título sem undefined
-            const titulo = `${produtoRef.tipo || "Geral"} - ${produtoRef.nome || "Modelo"}`;
-            renderizarTabelaFamilia(titulo);
-            
-            document.getElementById('inputBuscaEdicao').value = cod;
+            renderizarTabelaFamilia(`${produtoRef.tipo} - ${produtoRef.nome}`);
         } else {
-            mostrarAviso("Código não encontrado!", "error");
+            mostrarAviso("Código não cadastrado!", "error");
         }
     }
     
