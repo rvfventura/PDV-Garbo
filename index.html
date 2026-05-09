@@ -1548,7 +1548,8 @@
                 method: 'POST',
                 body: JSON.stringify({
                     acao: 'salvarAlteracoesEstoque',
-                    lista: dadosParaSalvar
+                    lista: dadosParaSalvar // Se o seu back-end usa 'conteudo.lista'
+                    // OU use: dados: dadosParaSalvar se o seu back-end usa 'conteudo.dados'
                 })
             });
     
