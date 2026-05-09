@@ -1609,12 +1609,20 @@
     
     // Facilidade extra: aplicar preço para todos ao mesmo tempo
     function aplicarPrecoEmLote() {
-        const novoPreco = prompt("Digite o preço padrão para toda a coleção:");
-        if (novoPreco === null || isNaN(parseFloat(novoPreco))) return;
-    
-        familiaAtiva.forEach((_, index) => {
-            document.getElementById(`editPreco_${index}`).value = parseFloat(novoPreco).toFixed(2);
-        });
+        exibirModalInput(
+            "Preço em Lote", 
+            "Digite o preço padrão para todos os itens da lista:", 
+            (novoPreco) => {
+                // Esta parte só executa quando clicar em "APLICAR" no modal
+                familiaAtiva.forEach((_, index) => {
+                    const inputPreco = document.getElementById(`editPreco_${index}`);
+                    if (inputPreco) {
+                        inputPreco.value = parseFloat(novoPreco).toFixed(2);
+                    }
+                });
+                mostrarAviso("Preços atualizados na lista!");
+            }
+        );
     }
     
     // Coleta as alterações feitas na tela e envia ao back-end
@@ -1748,6 +1756,41 @@
             };
         }
     });
+
+    //funções modal imput genérico
+    let acaoInputPendente = null;
+
+    function exibirModalInput(titulo, mensagem, callback) {
+        document.getElementById('inputModalTitle').innerText = titulo;
+        document.getElementById('inputModalMessage').innerText = mensagem;
+        document.getElementById('inputGenericoValor').value = "";
+        document.getElementById('modalInputGenerico').classList.remove('oculto');
+        
+        acaoInputPendente = callback;
+        setTimeout(() => document.getElementById('inputGenericoValor').focus(), 300);
+    }
+    
+    function fecharModalInput() {
+        document.getElementById('modalInputGenerico').classList.add('oculto');
+        acaoInputPendente = null;
+    }
+    
+    // Configura o botão de confirmação do input (pode colocar no window.onload ou global)
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnInput = document.getElementById('btnConfirmarInput');
+        if(btnInput) {
+            btnInput.onclick = () => {
+                const valor = document.getElementById('inputGenericoValor').value;
+                if (valor !== "" && !isNaN(valor)) {
+                    if (typeof acaoInputPendente === 'function') acaoInputPendente(valor);
+                    fecharModalInput();
+                } else {
+                    mostrarAviso("Por favor, insira um valor válido.", "error");
+                }
+            };
+        }
+    });
+    
 </script>
 
 <!-- Modal de Desconto Personalizado -->
@@ -1826,6 +1869,19 @@
     </div>
 </div>
 
+<div id="modalInputGenerico" class="modal-overlay oculto">
+    <div class="modal-content shadow-lg border-0">
+        <h5 id="inputModalTitle" class="fw-bold mb-3">Definir Valor</h5>
+        <p id="inputModalMessage" class="small text-muted">Digite o novo valor abaixo:</p>
+        <input type="number" id="inputGenericoValor" class="form-control form-control-lg text-center mb-3" 
+               placeholder="0.00" step="0.01" inputmode="decimal">
+        <div class="d-grid gap-2">
+            <button id="btnConfirmarInput" class="btn btn-primary btn-lg">APLICAR</button>
+            <button class="btn btn-light" onclick="fecharModalInput()">CANCELAR</button>
+        </div>
+    </div>
+</div>
+    
 <div id="modalConfirm" class="modal-overlay oculto">
     <div class="modal-content shadow-lg border-0">
         <h5 id="confirmTitle" class="fw-bold mb-3">Confirmação</h5>
