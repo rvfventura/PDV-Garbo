@@ -1237,10 +1237,42 @@
     
         const tipoAjuste = document.getElementById('tipoAjusteLote').value; // 'entrada', 'saida' ou 'balanco'
         
+        // --- LÓGICA DE STATUS INTELIGENTE ---
+        
+        // 1. Ativação Automática (Entrada ou Balanço com estoque)
+        if (tipoAjuste === 'entrada' || tipoAjuste === 'balanco') {
+            const inativos = itensInventario.filter(item => item.status === "Inativo");
+            if (inativos.length > 0) {
+                if (confirm(`Existem ${inativos.length} itens INATIVOS na lista. Deseja ATIVÁ-LOS para que voltem à venda?`)) {
+                    itensInventario.forEach(item => { if(item.status === "Inativo") item.status = "Ativo"; });
+                }
+            }
+        }
+    
+        // 2. Inativação Automática (Saída ou Balanço Zerado)
+        if (tipoAjuste === 'saida' || tipoAjuste === 'balanco') {
+            const ficaraoZerados = itensInventario.filter(item => {
+                const estoqueAtual = item.quantidade || 0;
+                const qtdAjuste = item.quantidadeAjuste || 0;
+                return tipoAjuste === 'balanco' ? qtdAjuste === 0 : (estoqueAtual - qtdAjuste) <= 0;
+            });
+    
+            if (ficaraoZerados.length > 0) {
+                if (confirm(`Atenção: ${ficaraoZerados.length} itens ficarão com estoque ZERADO. Deseja INATIVÁ-LOS automaticamente?`)) {
+                    itensInventario.forEach(item => {
+                        const estoqueAtual = item.quantidade || 0;
+                        const qtdAjuste = item.quantidadeAjuste || 0;
+                        const zerou = tipoAjuste === 'balanco' ? qtdAjuste === 0 : (estoqueAtual - qtdAjuste) <= 0;
+                        if (zerou) item.status = "Inativo";
+                    });
+                }
+            }
+        }
+    
         const payload = {
-            acao: 'ajustarEstoqueLote', // Nova ação para o seu Apps Script
+            acao: 'ajustarEstoqueLote',
             dados: {
-                itens: itensInventario, // Enviamos a lista completa [{codigo, quantidade}, ...]
+                itens: itensInventario, 
                 tipoAjuste: tipoAjuste,
                 vendedor: vendedorLogado,
                 data: new Date().toISOString()
@@ -1258,9 +1290,9 @@
     
             if (res.sucesso) {
                 mostrarAviso("Inventário finalizado com sucesso!");
-                itensInventario = []; // Limpa a lista após o sucesso
-                renderizarListaInventario(); // Limpa a interface
-                await carregarEstoqueInicial(); // Sincroniza o espelho local[cite: 4]
+                itensInventario = []; 
+                renderizarListaInventario(); 
+                await carregarEstoqueInicial(); 
             } else {
                 mostrarAviso("Erro: " + res.erro, "error");
             }
