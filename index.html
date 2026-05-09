@@ -948,7 +948,7 @@
         document.getElementById('modalMenuAdmin').classList.add('oculto');
     }
     
-    /* function acessarAdmin(tipo) {
+    function acessarAdmin(tipo) {
         fecharMenuAdmin();
         if (tipo === 'cadastro') {
             mudarTela('viewCadastro');
@@ -959,7 +959,7 @@
             mudarTela('viewEdicao');
             inicializarFiltrosEdicao(); // CARREGA OS SELECTS DINAMICAMENTE
         }
-    } */
+    }
     
     async function mudarTela(idTela) {
         // 1. Desligar scanners APENAS se estiverem realmente rodando (Estado 2 = SCANNING)
