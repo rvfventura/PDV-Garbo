@@ -1523,10 +1523,21 @@
     // Coleta as alterações feitas na tela e envia ao back-end
     async function salvarAlteracoesFamilia() {
         if (familiaAtiva.length === 0) return;
-    
+
+        const temPrecoZero = familiaAtiva.some((_, index) => {
+            const p = document.getElementById(`editPreco_${index}`).value;
+            return !p || parseFloat(p) <= 0;
+        });
+        
+        if (temPrecoZero) {
+            if (!confirm("Atenção: Existem itens com preço R$ 0,00 ou vazio. Deseja continuar mesmo assim?")) {
+                return;
+            }
+        }
+        
         const confirmacao = confirm(`Deseja salvar as alterações para os ${familiaAtiva.length} itens desta lista?`);
         if (!confirmacao) return;
-    
+        
         exibirLoader(true, "Salvando alterações...");
     
         try {
