@@ -7,6 +7,21 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
+        /* Estilo para as novas seções */
+        .secao-admin {
+            display: none; /* Escondido por padrão */
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .secao-ativa {
+            display: block !important;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+                
         body { background-color: #f8f9fa; font-family: sans-serif; overflow-x: hidden; }
         
         #reader { 
@@ -77,6 +92,51 @@
             width: 90%;
             max-width: 500px;
         }
+
+        .tabela-scroll {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        
+        .status-lote {
+            background: #f0f4f7;
+            padding: 10px;
+            text-align: center;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 1.1em;
+        }
+        
+        .btn-lixeira {
+            background: none;
+            border: none;
+            font-size: 1.2em;
+            cursor: pointer;
+        }
+
+        #readerInventario {
+            width: 100% !important;
+            max-width: 400px;
+            border: none !important;
+        }
+        
+        #readerInventario video {
+            border-radius: 8px;
+        }
+
+        #linhasFamiliaEdicao td {
+            vertical-align: middle;
+            white-space: normal; /* Permite que o texto quebre linha */
+            word-wrap: break-word;
+        }
+        
+        #viewEdicao .table th {
+            white-space: nowrap; /* Impede que o cabeçalho quebre linha, mantendo os ícones ↕️ alinhados */
+            user-select: none;   /* Impede seleção de texto ao clicar para ordenar */
+        }
     </style>
 </head>   
 <body>
@@ -105,6 +165,8 @@
 </div>
     
 <div class="container-fluid py-3 oculto" id="conteudoPrincipal">
+<!-- View 1: PDV (O que já existe) -->
+<div id="viewPDV" class="secao-admin secao-ativa">
     <div class="row g-3">
         <div class="col-12 col-md-6">
             <div class="card shadow-sm border-0 h-100 d-flex align-items-center justify-content-center">
@@ -123,6 +185,12 @@
                         </div>
                     </div>
                     <div class="mt-2 small text-muted" id="statusCache">Estoque local: carregando...</div>
+                    <!-- Botão Admin reposicionado -->
+                    <div class="mt-2">
+                        <button class="btn btn-dark btn-sm shadow-sm" style="font-size: 0.75rem;" onclick="solicitarAcessoAdmin()">
+                            ⚙️ Admin
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -194,9 +262,223 @@
         </div>
     </div>
 </div>
+<!-- View 2: Cadastro de Produtos -->
+<div id="viewCadastro" class="secao-admin container-fluid mt-2">
+    <div class="card shadow-sm border-0">
+        <!-- Cabeçalho Fixo -->
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+            <h5 class="mb-0 text-primary fw-bold">📦 Novo Modelo</h5>
+            <button class="btn btn-sm btn-outline-secondary" onclick="mudarTela('viewPDV')">Sair</button>
+        </div>
+
+        <div class="card-body p-2">
+            <div class="row g-2">
+                <!-- Coluna Esquerda: Definição (Fica visível no topo) -->
+                <div class="col-md-5 border-end">
+                    <div class="p-2 bg-light rounded mb-2">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="small fw-bold">Tipo</label>
+                                <input type="text" id="cadTipo" class="form-control form-control-sm text-uppercase" placeholder="Ex: Blusa">
+                            </div>
+                            <div class="col-6">
+                                <label class="small fw-bold">Nome</label>
+                                <input type="text" id="cadNome" class="form-control form-control-sm text-uppercase" placeholder="Ex: Camila">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Entrada de Cor e Preço -->
+                    <div id="areaEntradaVariação" class="p-3 border rounded bg-light">
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="small fw-bold text-muted">Cor</label>
+                                <input type="text" id="cadCor" class="form-control text-uppercase" placeholder="Ex: AZUL MARINHO">
+                            </div>
+                            <div class="col-12">
+                                <label class="small fw-bold text-muted">Preço Unitário (R$)</label>
+                                <input type="number" id="cadPreco" class="form-control" placeholder="0.00" step="0.01">
+                            </div>
+                            <div class="col-12 mt-2">
+                                <label class="small fw-bold d-block mb-1">Selecione os Tamanhos:</label>
+                                <div class="btn-group btn-group-sm w-100" id="grupoTamanhos">
+                                    <input type="checkbox" class="btn-check" id="tP" value="P"> <label class="btn btn-outline-primary" for="tP">P</label>
+                                    <input type="checkbox" class="btn-check" id="tM" value="M"> <label class="btn btn-outline-primary" for="tM">M</label>
+                                    <input type="checkbox" class="btn-check" id="tG" value="G"> <label class="btn btn-outline-primary" for="tG">G</label>
+                                    <input type="checkbox" class="btn-check" id="tGG" value="GG"> <label class="btn btn-outline-primary" for="tGG">GG</label>
+                                    <input type="checkbox" class="btn-check" id="tU" value="U"> <label class="btn btn-outline-primary" for="tU">U</label>
+                                </div>
+                                <div class="input-group input-group-sm mt-2">
+                                    <input type="text" id="cadTamanhoManual" class="form-control" placeholder="Outro (ex: 42)">
+                                </div>
+                            </div>
+                            <div class="col-12 mt-3">
+                                <button class="btn btn-primary w-100 fw-bold shadow-sm" onclick="adicionarVariacaoNaLista()">
+                                    ⚡ MONTAR GRADE (QTD 1)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coluna Direita: Lista de Variações Geradas (A "Matriz") -->
+                <div class="col-md-7">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small fw-bold">Lista de Variações Geradas:</span>
+                        <button class="btn btn-sm btn-link text-danger p-0" onclick="limparListaVariações()">Limpar Tudo</button>
+                    </div>
+                    <div style="max-height: 300px; overflow-y: auto;" class="border rounded bg-white">
+                        <div class="table-responsive border rounded bg-white" style="max-height: 400px;">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th class="ps-3">CÓDIGO</th>
+                                        <th>DESCRIÇÃO</th>
+                                        <th>PREÇO</th>
+                                        <th style="width: 100px;">QTD REAL</th>
+                                        <th class="text-center">AÇÃO</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="listaPreview">
+                                    <!-- Linhas geradas via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button id="btnCadastrarFinal" class="btn btn-success w-100 btn-lg fw-bold" onclick="enviarTudoParaEstoque()" disabled>
+                            CONFIRMAR E CADASTRAR NO SISTEMA
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View 3: Inventário e Ajustes Padronizada -->
+<div id="viewInventario" class="secao-admin container-fluid mt-2">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+            <h5 class="mb-0 text-primary fw-bold">🔍 Inventário em Lote</h5>
+            <button class="btn btn-sm btn-outline-secondary" onclick="mudarTela('viewPDV')">Sair</button>
+        </div>
+        
+        <div class="card-body p-3">
+            <div class="row g-3">
+                <!-- Coluna da Esquerda: Apenas o Scanner -->
+                <div class="col-12 col-md-5">
+                    <div class="card shadow-sm border-0 h-100 d-flex align-items-center justify-content-center bg-light">
+                        <div class="card-body text-center w-100">
+                            <h6 class="mb-3 text-muted">Terminal de Leitura</h6>
+                            <div id="readerInventario" class="mx-auto border-0"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coluna da Direita: Lista e Controles -->
+                <div class="col-12 col-md-7 d-flex flex-column" style="min-height: 450px;">
+                    <!-- Título da Lista igual ao Carrinho -->
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="m-0">Produtos (<span id="contagemItens">0</span>)</h5>
+                        <button class="btn btn-sm btn-outline-danger" onclick="itensInventario = []; renderizarListaInventario();">Limpar</button>
+                    </div>
+
+                    <!-- Lista de Itens Renderizados -->
+                    <div id="corpoListaInventario" class="carrinho-container flex-grow-1 border rounded p-2 bg-white mb-3" style="overflow-y: auto;">
+                        <!-- Preenchido via JS -->
+                    </div>
+
+                    <!-- Painel de Controle Inferior -->
+                    <div class="painel-pagamento mt-auto">
+                        <div class="mb-3">
+                            <label class="small fw-bold mb-1">Tipo de Operação Global:</label>
+                            <select id="tipoAjusteLote" class="form-select form-select-sm border-primary">
+                                <option value="balanco">Substituir Estoque (Balanço)</option>
+                                <option value="entrada">Somar ao Estoque (Entrada)</option>
+                                <option value="saida">Subtrair do Estoque (Saída)</option>
+                            </select>
+                        </div>
+                        <button onclick="salvarInventarioEmLote()" class="btn btn-success w-100 btn-lg fw-bold shadow-sm">
+                            FINALIZAR E ATUALIZAR
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View 4: Edição e Gestão de Produtos -->
+<div id="viewEdicao" class="secao-admin container-fluid mt-2">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+            <h5 class="mb-0 text-primary fw-bold">✏️ Gestão e Edição de Produtos</h5>
+            <button class="btn btn-sm btn-outline-secondary" onclick="mudarTela('viewPDV')">Sair</button>
+        </div>
+        <div class="card-body p-3">
+            <div class="row g-2 mb-3 bg-light p-3 rounded">
+                <div class="col-12 col-md-4">
+                    <label class="small fw-bold">Atalho por QR Code:</label>
+                    <div class="d-flex gap-2">
+                        <input type="text" id="inputBuscaEdicao" 
+                           class="form-control form-control-sm text-uppercase" 
+                           placeholder="Código..." 
+                           onkeydown="if(event.key === 'Enter') { buscarFamiliaPorCodigo(this.value); this.value = ''; }">
+                        <button class="btn btn-sm btn-primary" onclick="alternarCameraEdicao()">📷</button>
+                    </div>
+                    <div id="readerEdicao" class="mt-2 border rounded" style="display:none;"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                    <label class="small fw-bold">Filtrar por Tipo:</label>
+                    <select id="filtroTipoEdicao" class="form-select form-select-sm" onchange="atualizarSelectModelosEdicao()">
+                        <option value="">Selecione o Tipo...</option>
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                    <label class="small fw-bold">Filtrar por Modelo:</label>
+                    <select id="filtroModeloEdicao" class="form-select form-select-sm" onchange="carregarFamiliaPorFiltro()">
+                        <option value="">Selecione o Modelo...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="painelFamiliaEdicao" class="oculto">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-secondary fw-bold m-0">Coleção: <span id="nomeColecaoAtiva" class="text-dark">---</span></h6>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="aplicarPrecoEmLote()">Preço em Lote (R$)</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive border rounded bg-white mb-3" style="max-height: 450px;">
+                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                        <thead class="table-dark sticky-top">
+                            <tr>
+                                <th onclick="ordenarFamilia('nomeCombinado')" style="cursor:pointer">Nome Combinado ↕️</th>
+                                <th onclick="ordenarFamilia('codigo')" style="cursor:pointer">Cód ↕️</th>
+                                <th onclick="ordenarFamilia('tamanho')" style="cursor:pointer">Tam ↕️</th>
+                                <th style="width: 110px;">Preço (R$)</th>
+                                <th style="width: 90px;">Estoque</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="linhasFamiliaEdicao">
+                            </tbody>
+                    </table>
+                </div>
+
+                <button class="btn btn-success w-100 py-3 fw-bold" onclick="salvarAlteracoesFamilia()">
+                    💾 SALVAR TODAS AS ALTERAÇÕES DA LISTA
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
 
 <script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbwlrF8g7m9J44QRzPDMPbLeZcAT6nLL1i0lR4RcCZIZ0_rCdYedrwpLPkOLOAXb1sLe/exec";
+    const URL_API = "https://script.google.com/macros/s/AKfycbzYyt1CnHtGQovAn86E7sMXhj3BsvteqyuBRUiH4J2xM3dEElgk7klviLpgMggqKkHt/exec";
     let carrinho = [];
     let estoqueLocal = [];
     let scanner;
@@ -217,28 +499,46 @@
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
+            
             oscillator.type = "sine";
-            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // Tom mais agudo e limpo
             gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
+            
             oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.1);
-        } catch (e) { console.log("Áudio bloqueado."); }
+            oscillator.stop(audioCtx.currentTime + 0.1); // Beep curto de 100ms
+        } catch (e) { 
+            console.log("Áudio bloqueado ou erro no contexto:", e); 
+        }
     }
-    function sairDoSistema() {
+    async function sairDoSistema() {
+        // 1. DESLIGAR O SCANNER DO PDV (Ação Crítica)
+        if (scanner) {
+            try {
+                // Aguarda o encerramento do processo da câmera antes de prosseguir
+                await scanner.stop();
+                console.log("Scanner PDV desligado com sucesso.");
+            } catch (err) {
+                console.warn("Erro ao desligar o scanner no logout:", err);
+            }
+        }
+    
+        // 2. Limpar dados da sessão e variáveis
         window.onpopstate = null;
         vendedorLogado = "";
         document.getElementById('vendedorAtivo').value = "";
         carrinho = [];
         atualizarInterface();
         
-        // Tenta sair do Fullscreen se ainda estiver ativo
+        // 3. Sair do modo tela cheia (Fullscreen)
         if (document.fullscreenElement || document.webkitFullscreenElement) {
             const exitFS = document.exitFullscreen || document.webkitExitFullscreen;
             if (exitFS) exitFS.call(document).catch(err => console.log(err));
         }
         
+        // 4. Alternar visual das telas
         document.getElementById('conteudoPrincipal').classList.add('oculto');
         document.getElementById('telaAcesso').classList.remove('oculto');
     }
@@ -252,17 +552,42 @@
             });
             const res = await response.json();
             if (res.sucesso) {
-                estoqueLocal = res.lista.filter(item => item.codigo && item.codigo.trim() !== "");
+                // Filtra e mapeia injetando Tipo, Cor e agora o STATUS
+                estoqueLocal = res.lista.filter(item => item.codigo && item.codigo.trim() !== "").map(item => {
+                    const partes = item.nomeCombinado ? item.nomeCombinado.trim().split(/\s+/).filter(Boolean) : [];
+                    
+                    const tipo = partes.length > 0 ? partes[0] : "Geral";
+                    const cor = partes.length >= 2 ? partes[partes.length - 1] : "Padrão";
+                    const nome = partes.length > 2 ? partes.slice(1, -1).join(" ") : (partes[1] || item.nome);
+                
+                    return {
+                        ...item,
+                        tipo: tipo,
+                        cor: cor,
+                        nomeTratado: nome,
+                        // SEGUNDA CORREÇÃO: Garante que o status seja processado (Ativo/Inativo)
+                        status: item.status ? item.status.trim() : "Ativo"
+                    };
+                });
+
+                // DICA EXTRA: Se você usa o datalist para pesquisa na venda, 
+                // você pode filtrar os ativos aqui para outras funções se necessário.
+
                 const totalPecas = estoqueLocal.reduce((acc, item) => acc + (Number(item.quantidade) || 0), 0);
-                document.getElementById('statusCache').innerText =
-                    `Estoque local: ${totalPecas} peças em ${estoqueLocal.length} modelos.`;
+                const statusElem = document.getElementById('statusCache');
+                if (statusElem) {
+                    statusElem.innerText = `Estoque local: ${totalPecas} peças em ${estoqueLocal.length} modelos.`;
+                }
                 mostrarAviso("Estoque atualizado com sucesso!");
             }
         } catch (e) {
             console.error("Erro cache:", e);
             mostrarAviso("Erro ao conectar com a planilha.", "error");
-        } finally { exibirLoader(false); }
+        } finally { 
+            exibirLoader(false); 
+        }
     }
+    
     function iniciarScanner() {
         scanner = new Html5Qrcode("reader");
         const config = { fps: 15, qrbox: { width: 250, height: 250 } };
@@ -270,6 +595,54 @@
             processarLeitura(text);
         }).catch(err => console.error("Erro câmera:", err));
     }
+
+    let scannerInventario;
+
+    function iniciarScannerInventario() {
+        if (!scannerInventario) {
+            scannerInventario = new Html5Qrcode("readerInventario");
+        }
+        
+        const config = { fps: 15, qrbox: { width: 250, height: 250 } };
+        
+        if (scannerInventario.getState() === 1) {
+            scannerInventario.start(
+                { facingMode: "environment" }, 
+                config, 
+                async codigo => {
+                    // SÓ PROCESSA SE A TRAVA ESTIVER LIBERADA
+                    if (!processandoLeituraInventario) {
+                        processandoLeituraInventario = true; // Trava
+                        
+                        // Adiciona à lista de contagem (lógica do carrinho)
+                        adicionarAoInventario(codigo);
+    
+                        // Feedback visual/sonoro pode ser inserido aqui
+                        console.log("Código lido no inventário:", codigo);
+    
+                        // Libera a trava após 2 segundos para a próxima peça
+                        setTimeout(() => {
+                            processandoLeituraInventario = false;
+                        }, 2000);
+                    }
+                }
+            ).catch(err => console.error("Erro ao ligar câmera Inventário:", err));
+        }
+    }
+    
+    function ativarNovoScannerInv() {
+        scannerInventario = new Html5Qrcode("readerInventario");
+        const config = { fps: 15, qrbox: { width: 250, height: 250 } };
+        scannerInventario.start(
+            { facingMode: "environment" }, 
+            config, 
+            codigo => {
+                document.getElementById('inputCodInventario').value = codigo;
+                buscarParaAjuste(codigo);
+            }
+        ).catch(err => console.error("Erro câmera Inventário:", err));
+    }
+    
     function processarLeitura(codigo) {
         const agora = Date.now();
         if (codigo === ultimoCodigoLido && (agora - timestampUltimaLeitura) < 3000) return;
@@ -281,7 +654,14 @@
         if (!codigo) return;
         codigo = codigo.trim();
         const produto = estoqueLocal.find(p => p.codigo === codigo);
+
         if (produto) {
+            // --- TRAVA DE STATUS (LOCAL) ---
+            if (produto.status === "Inativo") {
+                mostrarAviso("ALERTA: Este produto está INATIVO e não pode ser vendido!", "error");
+                if (typeof playErrorBeep === "function") playErrorBeep();
+                return; // Bloqueia a inserção no carrinho
+            }
             adicionarAoCarrinho(produto);
         } else {
             exibirLoader(true, "Buscando...");
@@ -291,13 +671,26 @@
                     body: JSON.stringify({ acao: 'buscarProduto', dados: { codigo: codigo } })
                 });
                 const res = await response.json();
-                if (res.sucesso) adicionarAoCarrinho(res);
-                else mostrarAviso("Produto não encontrado: " + codigo, 'error');
+                
+                if (res.sucesso) {
+                    // --- TRAVA DE STATUS (REMOTO/API) ---
+                    // Garante que mesmo produtos vindos direto do banco respeitem o status
+                    if (res.status === "Inativo" || (res.produto && res.produto.status === "Inativo")) {
+                        mostrarAviso("Produto encontrado, porém está INATIVO.", "error");
+                    } else {
+                        adicionarAoCarrinho(res.produto || res);
+                    }
+                } else {
+                    mostrarAviso("Produto não encontrado: " + codigo, 'error');
+                }
             } catch (e) {
                 mostrarAviso("Erro de conexão ao buscar produto.", 'error');
-            } finally { exibirLoader(false); }
+            } finally { 
+                exibirLoader(false); 
+            }
         }
     }
+    
     function ajustarCamposPagamento() {
         const metodo = document.getElementById('metodoPgto').value;
         const container = document.getElementById('containerDinamico');
@@ -566,7 +959,714 @@
         }
     });
     
-    window.onload = () => { console.log("Sistema pronto."); };
+    window.onload = () => { 
+        console.log("Sistema pronto."); 
+        // Comente as linhas abaixo quando terminar os testes:
+        vendedorLogado = "Teste";
+        document.getElementById('telaAcesso').classList.add('oculto');
+        document.getElementById('conteudoPrincipal').classList.remove('oculto');
+    };
+
+// --- NOVAS FUNÇÕES PARA ADMINISTRAÇÃO E CADASTRO ---
+    
+    const PIN_MESTRE = "1234"; 
+    
+    function solicitarAcessoAdmin() {
+        const pin = prompt("Digite o PIN de administrador:");
+        if (pin === PIN_MESTRE) {
+            document.getElementById('modalMenuAdmin').classList.remove('oculto');
+        } else if (pin !== null) {
+            mostrarAviso("PIN Incorreto!", "error");
+        }
+    }
+    
+    function fecharMenuAdmin() {
+        document.getElementById('modalMenuAdmin').classList.add('oculto');
+    }
+    
+   function acessarAdmin(tipo) {
+        fecharMenuAdmin();
+        if (tipo === 'cadastro') {
+            mudarTela('viewCadastro');
+        } else if (tipo === 'inventario') {
+            mudarTela('viewInventario');
+            // Inicializa o leitor do inventário se necessário
+        } else if (tipo === 'edicao') {
+            mudarTela('viewEdicao');
+            inicializarFiltrosEdicao(); // CARREGA OS SELECTS DINAMICAMENTE
+        }
+    }
+    
+    async function mudarTela(idTela) {
+        // 1. Desligar scanners APENAS se estiverem realmente rodando (Estado 2 = SCANNING)
+        try {
+            if (scanner && scanner.getState() === 2) {
+                await scanner.stop();
+            }
+            if (scannerInventario && scannerInventario.getState() === 2) {
+                await scannerInventario.stop();
+            }
+        } catch (e) {
+            console.warn("Aviso: Tentativa de parada em scanner já inativo.", e);
+        }
+    
+        // 2. Esconder todas as telas
+        document.querySelectorAll('.secao-admin').forEach(s => s.classList.remove('secao-ativa'));
+        
+        // 3. Mostrar a tela desejada
+        const telaDestino = document.getElementById(idTela);
+        if (telaDestino) telaDestino.classList.add('secao-ativa');
+        
+        // 4. Ligar o scanner específico da tela
+        if (idTela === 'viewPDV') {
+            iniciarScanner();
+            setTimeout(() => {
+                const input = document.getElementById('manualInput');
+                if (input) input.focus();
+            }, 300);
+        } 
+        else if (idTela === 'viewInventario') {
+            iniciarScannerInventario();
+        }
+    }
+    
+    // Esta é a função que automatiza a criação do código baseado na sua regra de negócio
+    let listaVariaçõesTemp = [];
+    
+    function adicionarVariacaoNaLista() {
+        const tipo = document.getElementById('cadTipo').value.trim().toUpperCase();
+        const nome = document.getElementById('cadNome').value.trim().toUpperCase();
+        const cor = document.getElementById('cadCor').value.trim().toUpperCase();
+        const preco = document.getElementById('cadPreco').value;
+        
+        const checks = document.querySelectorAll('#grupoTamanhos input:checked');
+        const manualTam = document.getElementById('cadTamanhoManual').value.trim().toUpperCase();
+    
+        if (!tipo || !nome || !cor || !preco || (checks.length === 0 && !manualTam)) {
+            return mostrarAviso("Preencha todos os campos!", "error");
+        }
+    
+        let tamanhosParaAdicionar = Array.from(checks).map(c => c.value);
+        if (manualTam) tamanhosParaAdicionar.push(manualTam);
+    
+        tamanhosParaAdicionar.forEach(tam => {
+            // Regra: 2 Tipo + 3 Nome + 3 Cor + Tamanho
+            const cod = tipo.substring(0, 2).padEnd(2, 'X') +
+                        nome.substring(0, 3).padEnd(3, 'X') +
+                        cor.substring(0, 3).padEnd(3, 'X') + tam;
+    
+            // VERIFICAÇÃO 1: No estoque que veio da planilha (Cache Local)
+            const existeNoEstoque = estoqueLocal.some(p => p.codigo === cod);
+            
+            // VERIFICAÇÃO 2: Na lista que você está montando agora (Memória Temporária)
+            const existeNaListaAtual = listaVariaçõesTemp.some(item => item.codigo === cod);
+    
+            if (existeNoEstoque || existeNaListaAtual) {
+                mostrarAviso(`O código ${cod} já existe ou já foi adicionado!`, "error");
+            } else {
+                listaVariaçõesTemp.push({
+                    tipo: tipo,
+                    nomeModelo: nome,
+                    cor: cor,
+                    tamanho: tam,
+                    codigo: cod,
+                    preco: parseFloat(preco) || 0,
+                    quantidade: parseInt(document.getElementById('cadQtd')?.value || 1),
+                    nomeCombinado: `${tipo} ${nome} ${cor} ${tam}`,
+                    descricao: `${tipo} ${nome} ${cor} ${tam}`
+                });
+            }
+        });
+    
+        renderizarListaPreview();
+        resetarCamposParcial();
+    }
+    
+    function renderizarListaPreview() {
+        const tbody = document.getElementById('listaPreview');
+        const btnFinal = document.getElementById('btnCadastrarFinal');
+        tbody.innerHTML = "";
+    
+        listaVariaçõesTemp.forEach((item, index) => {
+            tbody.innerHTML += `
+                <tr class="align-middle">
+                    <td class="ps-3 fw-bold text-primary">${item.codigo}</td>
+                    <td class="small">${item.nomeCombinado}</td>
+                    <td class="small">R$ ${Number(item.preco).toFixed(2).replace('.', ',')}</td>
+                    <td>
+                        <input type="number" 
+                               class="form-control form-control-sm text-center fw-bold border-primary" 
+                               value="${item.quantidade}" 
+                               min="1"
+                               onchange="atualizarQtdMemoria(${index}, this.value)">
+                    </td>
+                    <td class="text-center">
+                        <button class="btn btn-sm text-danger" onclick="removerItemVariacao(${index})">
+                            <i class="bi bi-trash"></i> ✕
+                        </button>
+                    </td>
+                </tr>`;
+        });
+    
+        btnFinal.disabled = listaVariaçõesTemp.length === 0;
+    }
+    
+    // ATUALIZAÇÃO EM TEMPO REAL: Altera o valor no array quando você digita na tabela
+    function atualizarQtdMemoria(index, novoValor) {
+        const qtd = parseInt(novoValor);
+        if (qtd > 0) {
+            listaVariaçõesTemp[index].quantidade = qtd;
+        } else {
+            listaVariaçõesTemp[index].quantidade = 1;
+            renderizarListaPreview(); // Reset visual para 1
+        }
+    }
+    
+    function resetarCamposParcial() {
+        // Limpa Cor, Tamanhos e Manual para a próxima cor do mesmo modelo
+        document.getElementById('cadCor').value = "";
+        document.getElementById('cadTamanhoManual').value = "";
+        document.querySelectorAll('#grupoTamanhos input').forEach(c => c.checked = false);
+        document.getElementById('cadCor').focus();
+    }
+    
+    function removerItemVariacao(index) {
+        listaVariaçõesTemp.splice(index, 1);
+        renderizarListaPreview();
+    }
+    
+    /* function limparListaVariações() {
+        listaVariaçõesTemp = [];
+        renderizarListaPreview();
+    } */
+    
+    async function enviarTudoParaEstoque() {
+        if (listaVariaçõesTemp.length === 0) return;
+    
+        const btn = document.getElementById('btnCadastrarFinal');
+        btn.disabled = true;
+        btn.innerHTML = "⌛ SALVANDO NA PLANILHA...";
+    
+        const payload = {
+            acao: 'cadastrarNovosProdutos', // Nome da ação que você deve tratar no seu .gs
+            dados: listaVariaçõesTemp
+        };
+    
+        exibirLoader(true, "Cadastrando no Estoque...");
+    
+        try {
+            const response = await fetch(URL_API, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            
+            const res = await response.json();
+            
+            if (res.sucesso) {
+                mostrarAviso(res.mensagem || "Produtos cadastrados com sucesso!", "success");
+                limparFormularioCompleto();
+                await carregarEstoqueInicial(); // Atualiza o cache local do PDV
+                mudarTela('viewPDV');
+            } else {
+                mostrarAviso(res.erro || "Erro ao cadastrar.", "error");
+                btn.disabled = false;
+                btn.innerHTML = "CONFIRMAR E CADASTRAR NO SISTEMA";
+            }
+        } catch (e) {
+            console.error(e);
+            mostrarAviso("Erro de conexão com o servidor.", "error");
+            btn.disabled = false;
+            btn.innerHTML = "CONFIRMAR E CADASTRAR NO SISTEMA";
+        } finally {
+            exibirLoader(false);
+        }
+    }
+
+    function limparFormularioCompleto() {
+        // 1. Limpa o array e a renderização cuida do visual (tabela e botão)
+        listaVariaçõesTemp = [];
+        renderizarListaPreview();
+    
+        // 2. Limpa os campos de entrada
+        const campos = ['cadTipo', 'cadNome', 'cadPreco', 'cadCor', 'cadTamanhoManual', 'cadCodigo'];
+        campos.forEach(id => {
+            const campo = document.getElementById(id);
+            if (campo) campo.value = "";
+        });
+    
+        // 3. Reseta checkboxes de tamanhos (se houver)
+        document.querySelectorAll('#grupoTamanhos input').forEach(c => c.checked = false);
+    
+        // 4. Reseta a quantidade e devolve o foco ao primeiro campo[cite: 2]
+        if (document.getElementById('cadQtd')) document.getElementById('cadQtd').value = "1";
+        
+        const btn = document.getElementById('btnCadastrarFinal');
+        if (btn) btn.innerHTML = "CONFIRMAR E CADASTRAR NO SISTEMA";
+        
+        document.getElementById('cadTipo').focus();
+    }
+
+//NOVAS FUNÇÕES PARA INVETÁRIO E AJUSTES DE ESTOQUE
+
+    let produtoEmAjuste = null;
+    let itensInventario = []; // Nossa lista de contagem
+    let processandoLeituraInventario = false; // A trava (flag)
+    
+    function buscarParaAjuste(codigo) {
+        if (!codigo) return;
+        const cod = codigo.trim().toUpperCase();
+        const produto = estoqueLocal.find(p => p.codigo === cod);
+    
+        if (produto) {
+            produtoEmAjuste = produto;
+            document.getElementById('ajusteNome').innerText = produto.nomeCombinado || produto.nome;
+            document.getElementById('ajusteCodigo').innerText = produto.codigo;
+            document.getElementById('ajusteQtdAtual').innerText = produto.quantidade;
+            document.getElementById('detalhesAjuste').classList.remove('d-none');
+            document.getElementById('msgAjusteHome').classList.add('d-none');
+            playBeep();
+        } else {
+            mostrarAviso("Produto não encontrado no estoque local.", "error");
+        }
+    }
+    
+    async function salvarInventarioEmLote() {
+        if (itensInventario.length === 0) {
+            return mostrarAviso("A lista de inventário está vazia.", "error");
+        }
+    
+        const tipoAjuste = document.getElementById('tipoAjusteLote').value; // 'entrada', 'saida' ou 'balanco'
+        
+        // --- LÓGICA DE STATUS INTELIGENTE ---
+        
+        // 1. Ativação Automática (Entrada ou Balanço com estoque)
+        if (tipoAjuste === 'entrada' || tipoAjuste === 'balanco') {
+            const inativos = itensInventario.filter(item => item.status === "Inativo");
+            if (inativos.length > 0) {
+                if (confirm(`Existem ${inativos.length} itens INATIVOS na lista. Deseja ATIVÁ-LOS para que voltem à venda?`)) {
+                    itensInventario.forEach(item => { if(item.status === "Inativo") item.status = "Ativo"; });
+                }
+            }
+        }
+    
+        // 2. Inativação Automática (Saída ou Balanço Zerado)
+        if (tipoAjuste === 'saida' || tipoAjuste === 'balanco') {
+            const ficaraoZerados = itensInventario.filter(item => {
+                // No inventário, 'item.quantidade' é o valor que você bipou/digitou
+                // 'item.quantidadeOriginal' (ou o valor vindo do estoqueLocal) é o que tinha antes
+                const estoqueAtualPlanilha = item.quantidadeOriginal || 0; 
+                const valorBipado = item.quantidade || 0;
+    
+                if (tipoAjuste === 'balanco') {
+                    return valorBipado === 0;
+                } else {
+                    return (estoqueAtualPlanilha - valorBipado) <= 0;
+                }
+            });
+    
+            if (ficaraoZerados.length > 0) {
+                if (confirm(`Atenção: ${ficaraoZerados.length} itens ficarão com estoque ZERADO. Deseja INATIVÁ-LOS automaticamente?`)) {
+                    itensInventario.forEach(item => {
+                        const estoqueAtualPlanilha = item.quantidadeOriginal || 0;
+                        const valorBipado = item.quantidade || 0;
+                        const zerou = tipoAjuste === 'balanco' ? valorBipado === 0 : (estoqueAtualPlanilha - valorBipado) <= 0;
+                        if (zerou) item.status = "Inativo";
+                    });
+                }
+            }
+        }
+    
+        const payload = {
+            acao: 'ajustarEstoqueLote',
+            dados: {
+                itens: itensInventario, 
+                tipoAjuste: tipoAjuste,
+                vendedor: vendedorLogado,
+                data: new Date().toISOString()
+            }
+        };
+    
+        exibirLoader(true, "Atualizando estoque de " + itensInventario.length + " itens...");
+        
+        try {
+            const response = await fetch(URL_API, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            const res = await response.json();
+    
+            if (res.sucesso) {
+                mostrarAviso("Inventário finalizado com sucesso!");
+                itensInventario = []; 
+                renderizarListaInventario(); 
+                await carregarEstoqueInicial(); 
+            } else {
+                mostrarAviso("Erro: " + res.erro, "error");
+            }
+        } catch (e) {
+            mostrarAviso("Erro de conexão ao salvar lote.", "error");
+        } finally {
+            exibirLoader(false);
+        }
+    }
+
+    function adicionarAoInventario(codigo) {
+        if (!codigo) return;
+        const cod = codigo.trim().toUpperCase();
+        
+        playBeep(); 
+    
+        const itemExistente = itensInventario.find(item => item.codigo === cod);
+    
+        if (itemExistente) {
+            itemExistente.quantidade++;
+        } else {
+            const infoProduto = estoqueLocal.find(p => p.codigo === cod);
+            
+            if (infoProduto) {
+                itensInventario.push({
+                    codigo: cod,
+                    nome: infoProduto.nome,
+                    nomeCombinado: infoProduto.nomeCombinado,
+                    tamanho: infoProduto.tamanho || "",
+                    quantidade: 1,
+                    // --- INCLUSÕES NECESSÁRIAS PARA A LÓGICA DE STATUS ---
+                    status: infoProduto.status || "Ativo", // Guarda o status atual
+                    quantidadeOriginal: infoProduto.quantidade || 0 // Guarda o estoque atual para o cálculo de saída
+                });
+            } else {
+                mostrarAviso("Produto " + cod + " não encontrado!", "error");
+                return;
+            }
+        }
+        renderizarListaInventario();
+    }
+    
+    function renderizarListaInventario() {
+        const lista = document.getElementById('corpoListaInventario');
+        let totalPecas = 0;
+        lista.innerHTML = "";
+        
+        itensInventario.forEach((item, idx) => {
+            totalPecas += item.quantidade;
+            const tamanhoTexto = item.tamanho ? `<span class="item-tamanho"> | ${item.tamanho}</span>` : "";
+            
+            lista.innerHTML += `
+                <div class="card item-card shadow-sm mb-2">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="item-nome" style="flex: 1.5;">
+                            <strong>${item.nomeCombinado || item.nome}</strong>${tamanhoTexto}
+                        </div>
+                        <div class="text-center" style="flex: 0.5; font-size: 0.85rem;">
+                            <span class="badge bg-primary">${item.quantidade}x</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-end" style="flex: 1; min-width: 90px;">
+                            <button class="btn btn-sm btn-outline-secondary border-0 px-2" onclick="alterarQtdInventario(${idx}, -1)">-</button>
+                            <button class="btn btn-sm btn-outline-secondary border-0 px-2 me-1" onclick="alterarQtdInventario(${idx}, 1)">+</button>
+                            <button class="btn btn-sm btn-outline-danger border-0 p-0 px-2" onclick="removerDoInventario(${idx})">✕</button>
+                        </div>
+                    </div>
+                </div>`;
+        });
+    
+        // Atualiza o número dentro dos parênteses no título
+        document.getElementById('contagemItens').innerText = totalPecas;
+    }
+    
+    // Funções auxiliares para melhorar a usabilidade no inventário
+    function alterarQtdInventario(index, delta) {
+        itensInventario[index].quantidade += delta;
+        if (itensInventario[index].quantidade <= 0) {
+            removerDoInventario(index);
+        } else {
+            renderizarListaInventario();
+        }
+    }
+    
+    function removerDoInventario(index) {
+        itensInventario.splice(index, 1);
+        renderizarListaInventario();
+    }
+    async function pararScannersEMudar(proximaTela) {
+        // Forçamos o desligamento aguardando a promessa
+        if (scannerInventario && scannerInventario.getState() === 2) {
+            try {
+                await scannerInventario.stop();
+                mudarTela(proximaTela);
+            } catch (e) {
+                mudarTela(proximaTela); // Muda mesmo se der erro na parada
+            }
+        } else {
+            mudarTela(proximaTela);
+        }
+    }
+
+// FUNÇÕES PARA A TELA DE EDIÇÃO DE PRODUTOS
+    let familiaAtiva = []; // Armazena a lista de produtos da coleção sendo editada
+
+    // Popula o select de Tipos ao entrar na tela de edição
+    function inicializarFiltrosEdicao() {
+        const selectTipo = document.getElementById('filtroTipoEdicao');
+        const selectModelo = document.getElementById('filtroModeloEdicao');
+        
+        if (!selectTipo) return;
+    
+        selectTipo.innerHTML = '<option value="">Selecione o Tipo...</option>';
+        selectModelo.innerHTML = '<option value="">Selecione o Modelo...</option>';
+        
+        // Extrai os tipos do estoqueLocal
+        const tiposUnicos = [...new Set(estoqueLocal.map(p => p.tipo))].filter(Boolean).sort();
+        
+        tiposUnicos.forEach(tipo => {
+            const option = document.createElement('option');
+            option.value = tipo;
+            option.text = tipo;
+            selectTipo.appendChild(option);
+        });
+        
+        // Esconde o painel de edição até que algo seja selecionado ou bipado
+        document.getElementById('painelFamiliaEdicao').classList.add('oculto');
+    }
+    
+    // Atualiza o select de modelos com base no tipo selecionado
+    function atualizarSelectModelosEdicao() {
+        const tipoSelecionado = document.getElementById('filtroTipoEdicao').value;
+        const selectModelo = document.getElementById('filtroModeloEdicao');
+        
+        if (!tipoSelecionado) {
+            document.getElementById('painelFamiliaEdicao').classList.add('oculto');
+            return;
+        }
+    
+        // 1. Filtra os modelos, limpa espaços e padroniza para Maiúsculas
+        const modelosFiltrados = [...new Set(
+            estoqueLocal
+                .filter(p => p.tipo === tipoSelecionado)
+                .map(p => p.nome ? p.nome.trim().toUpperCase() : "")
+        )].filter(Boolean).sort();
+    
+        // 2. Preenche o select sem duplicatas
+        selectModelo.innerHTML = '<option value="">Todos os Modelos...</option>';
+        modelosFiltrados.forEach(modelo => {
+            const option = document.createElement('option');
+            option.value = modelo;
+            option.text = modelo;
+            selectModelo.appendChild(option);
+        });
+    
+        // 3. Exibe logo a lista do Tipo selecionado
+        familiaAtiva = estoqueLocal.filter(p => p.tipo === tipoSelecionado);
+        renderizarTabelaFamilia(`Coleção: ${tipoSelecionado}`);
+    }
+    
+    // Carrega os dados na tabela com base nos filtros selecionados
+    function carregarFamiliaPorFiltro() {
+        const tipo = document.getElementById('filtroTipoEdicao').value;
+        const modelo = document.getElementById('filtroModeloEdicao').value;
+        
+        if (!tipo) return;
+    
+        if (modelo === "") {
+            // Se escolheu "Todos os Modelos", mostra tudo do tipo
+            familiaAtiva = estoqueLocal.filter(p => p.tipo === tipo);
+            renderizarTabelaFamilia(`Tipo: ${tipo}`);
+        } else {
+            // Se escolheu um modelo específico, refina a busca
+            familiaAtiva = estoqueLocal.filter(p => p.tipo === tipo && p.nome === modelo);
+            renderizarTabelaFamilia(`${tipo} - ${modelo}`);
+        }
+    }
+    
+    // ATALHO: Bipa o código, descobre a família e carrega tudo
+    function buscarFamiliaPorCodigo(codigo) {
+        if (!codigo) return;
+        const cod = codigo.trim().toUpperCase();
+        const produtoRef = estoqueLocal.find(p => p.codigo === cod);
+    
+        if (produtoRef) {
+            playBeep();
+            
+            // Sincroniza o select de Tipo
+            document.getElementById('filtroTipoEdicao').value = produtoRef.tipo;
+            
+            // Atualiza a lista de modelos baseada no tipo e seleciona o modelo específico
+            atualizarSelectModelosEdicao();
+            document.getElementById('filtroModeloEdicao').value = produtoRef.nome;
+            
+            // Filtra a família pelo modelo do código lido
+            familiaAtiva = estoqueLocal.filter(p => p.tipo === produtoRef.tipo && p.nome === produtoRef.nome);
+            renderizarTabelaFamilia(`${produtoRef.tipo} - ${produtoRef.nome}`);
+        } else {
+            mostrarAviso("Código não cadastrado!", "error");
+        }
+    }
+    
+    // Renderiza os inputs de edição na tabela
+    let ordemAtual = { campo: '', ascendente: true };
+
+    function ordenarFamilia(campo) {
+        if (ordemAtual.campo === campo) {
+            ordemAtual.ascendente = !ordemAtual.ascendente;
+        } else {
+            ordemAtual.campo = campo;
+            ordemAtual.ascendente = true;
+        }
+    
+        familiaAtiva.sort((a, b) => {
+            let valA = a[campo] ? a[campo].toString().toUpperCase() : '';
+            let valB = b[campo] ? b[campo].toString().toUpperCase() : '';
+            
+            // Se for número, compara como número
+            if (campo === 'preco' || campo === 'quantidade') {
+                return ordemAtual.ascendente ? a[campo] - b[campo] : b[campo] - a[campo];
+            }
+    
+            return ordemAtual.ascendente 
+                ? valA.localeCompare(valB, undefined, {numeric: true}) 
+                : valB.localeCompare(valA, undefined, {numeric: true});
+        });
+    
+        renderizarTabelaFamilia(document.getElementById('nomeColecaoAtiva').innerText);
+    }
+    
+    function renderizarTabelaFamilia(titulo) {
+        const nomeColecaoAtiva = document.getElementById('nomeColecaoAtiva');
+        if (nomeColecaoAtiva) nomeColecaoAtiva.innerText = titulo;
+        
+        const corpo = document.getElementById('linhasFamiliaEdicao');
+        if (!corpo) return;
+        corpo.innerHTML = "";
+    
+        familiaAtiva.forEach((item, index) => {
+            const statusChecked = item.status !== "Inativo" ? "checked" : "";
+            
+            corpo.innerHTML += `
+                <tr>
+                    <td style="min-width: 200px;">
+                        <div class="fw-bold lh-sm">${item.nomeCombinado}</div>
+                    </td>
+                    <td><small class="text-secondary">${item.codigo}</small></td>
+                    <td><span class="badge bg-light text-dark border">${item.tamanho || "U"}</span></td>
+                    <td>
+                        <input type="number" step="0.01" class="form-control form-control-sm text-end" 
+                            id="editPreco_${index}" value="${Number(item.preco).toFixed(2)}" style="width: 100px;">
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm text-center" 
+                            id="editEstoque_${index}" value="${item.quantidade}" style="width: 80px;">
+                    </td>
+                    <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                            <input class="form-check-input" type="checkbox" id="editStatus_${index}" ${statusChecked}>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+    
+        document.getElementById('painelFamiliaEdicao').classList.remove('oculto');
+    }
+    
+    // Facilidade extra: aplicar preço para todos ao mesmo tempo
+    function aplicarPrecoEmLote() {
+        const novoPreco = prompt("Digite o preço padrão para toda a coleção:");
+        if (novoPreco === null || isNaN(parseFloat(novoPreco))) return;
+    
+        familiaAtiva.forEach((_, index) => {
+            document.getElementById(`editPreco_${index}`).value = parseFloat(novoPreco).toFixed(2);
+        });
+    }
+    
+    // Coleta as alterações feitas na tela e envia ao back-end
+    async function salvarAlteracoesFamilia() {
+        if (familiaAtiva.length === 0) return;
+
+        const temPrecoZero = familiaAtiva.some((_, index) => {
+            const p = document.getElementById(`editPreco_${index}`).value;
+            return !p || parseFloat(p) <= 0;
+        });
+        
+        if (temPrecoZero) {
+            if (!confirm("Atenção: Existem itens com preço R$ 0,00 ou vazio. Deseja continuar mesmo assim?")) {
+                return;
+            }
+        }
+        
+        const confirmacao = confirm(`Deseja salvar as alterações para os ${familiaAtiva.length} itens desta lista?`);
+        if (!confirmacao) return;
+        
+        exibirLoader(true, "Salvando alterações...");
+    
+        try {
+            // Prepara os dados lendo os inputs da tabela
+            const dadosParaSalvar = familiaAtiva.map((item, index) => {
+                const novoPreco = document.getElementById(`editPreco_${index}`).value;
+                const novoEstoque = document.getElementById(`editEstoque_${index}`).value;
+                const novoStatus = document.getElementById(`editStatus_${index}`).checked ? "Ativo" : "Inativo";
+    
+                return {
+                    codigo: item.codigo,
+                    preco: parseFloat(novoPreco),
+                    quantidade: parseInt(novoEstoque),
+                    status: novoStatus
+                };
+            });
+    
+            const response = await fetch(URL_API, {
+                method: 'POST',
+                body: JSON.stringify({
+                    acao: 'salvarAlteracoesEstoque',
+                    lista: dadosParaSalvar // Se o seu back-end usa 'conteudo.lista'
+                    // OU use: dados: dadosParaSalvar se o seu back-end usa 'conteudo.dados'
+                })
+            });
+    
+            const res = await response.json();
+    
+            if (res.sucesso) {
+                mostrarAviso("Planilha atualizada com sucesso!");
+                // IMPORTANTE: Atualiza o estoque local para refletir as mudanças sem precisar recarregar tudo
+                await carregarEstoqueInicial(); 
+                document.getElementById('painelFamiliaEdicao').classList.add('oculto');
+            } else {
+                throw new Error(res.erro);
+            }
+        } catch (e) {
+            console.error("Erro ao salvar:", e);
+            mostrarAviso("Erro ao salvar alterações: " + e.message, "error");
+        } finally {
+            exibirLoader(false);
+        }
+    }
+    
+    let scannerEdicao = null;
+
+    async function alternarCameraEdicao() {
+        const readerDiv = document.getElementById('readerEdicao');
+        
+        if (scannerEdicao) {
+            await scannerEdicao.stop();
+            scannerEdicao = null;
+            readerDiv.style.display = 'none';
+            return;
+        }
+    
+        readerDiv.style.display = 'block';
+        scannerEdicao = new Html5Qrcode("readerEdicao");
+        
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        
+        scannerEdicao.start(
+            { facingMode: "environment" }, 
+            config, 
+            codigo => {
+                buscarFamiliaPorCodigo(codigo);
+                alternarCameraEdicao(); // Desliga após ler
+            }
+        ).catch(err => console.error("Erro na câmera de edição:", err));
+    }
+
+    
 </script>
 
 <!-- Modal de Desconto Personalizado -->
@@ -609,5 +1709,28 @@
     .oculto { display: none !important; }
 </style>    
 
+<!-- Modal de Seleção Admin -->
+<div id="modalMenuAdmin" class="modal-overlay oculto">
+    <div class="modal-content shadow-lg border-0">
+        <h5 class="fw-bold mb-4">Área Administrativa</h5>
+        <div class="d-grid gap-3">
+            <button class="btn btn-primary py-3 fw-bold" onclick="acessarAdmin('cadastro')">
+                📦 CADASTRAR PRODUTOS
+            </button>
+            <button class="btn btn-dark py-3 fw-bold" onclick="acessarAdmin('inventario')">
+                🔍 INVENTÁRIO / AJUSTES
+            </button>
+            <!-- Novo botão de Gestão -->
+            <button class="btn btn-warning py-3 fw-bold" onclick="acessarAdmin('edicao')">
+                ✏️ GESTÃO / EDITAR PRODUTO
+            </button>
+            <hr>
+            <button class="btn btn-outline-secondary py-2" onclick="fecharMenuAdmin()">
+                CANCELAR
+            </button>
+        </div>
+    </div>
+</div>
+    
 </body>
 </html>
