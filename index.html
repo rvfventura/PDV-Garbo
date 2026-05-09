@@ -478,7 +478,7 @@
 </div>
 
 <script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbxA7LIZhja0j-QhktlirNem3Ofc7_ItUB-6p4Hic8LFkGQN7A0IVt6d5WdWIXaUdtz51Q/exec";
+    const URL_API = "https://script.google.com/macros/s/AKfycbw63gewBCab3eS6wN2FlShhNx0y8ARnqmtMgcVpde-mTBbQK8Ufi0y7Km25MexBNowkdQ/exec";
     let carrinho = [];
     let estoqueLocal = [];
     let scanner;
@@ -552,30 +552,26 @@
             });
             const res = await response.json();
             if (res.sucesso) {
-                // Filtra e mapeia injetando Tipo e Cor através do nomeCombinado
+                // Filtra e mapeia injetando Tipo, Cor e agora o STATUS
                 estoqueLocal = res.lista.filter(item => item.codigo && item.codigo.trim() !== "").map(item => {
-                    // .trim() remove espaços no início e fim
-                    // .split(/\s+/) divide por qualquer quantidade de espaços (um ou vários)
-                    // .filter(Boolean) remove entradas vazias da lista
                     const partes = item.nomeCombinado ? item.nomeCombinado.trim().split(/\s+/).filter(Boolean) : [];
                     
-                    // Lógica Inteligente:
                     const tipo = partes.length > 0 ? partes[0] : "Geral";
-                    
-                    // A cor será SEMPRE a última palavra, desde que haja mais de uma
                     const cor = partes.length >= 2 ? partes[partes.length - 1] : "Padrão";
-                    
-                    // O nome será tudo o que estiver entre o primeiro e o último (caso o nome tenha mais de uma palavra)
-                    // Ex: "VESTIDO LONGO FESTA PRETO" -> Tipo: VESTIDO | Nome: LONGO FESTA | Cor: PRETO
                     const nome = partes.length > 2 ? partes.slice(1, -1).join(" ") : (partes[1] || item.nome);
                 
                     return {
                         ...item,
                         tipo: tipo,
                         cor: cor,
-                        nomeTratado: nome // Nome limpo sem o tipo e sem a cor
+                        nomeTratado: nome,
+                        // SEGUNDA CORREÇÃO: Garante que o status seja processado (Ativo/Inativo)
+                        status: item.status ? item.status.trim() : "Ativo"
                     };
                 });
+
+                // DICA EXTRA: Se você usa o datalist para pesquisa na venda, 
+                // você pode filtrar os ativos aqui para outras funções se necessário.
 
                 const totalPecas = estoqueLocal.reduce((acc, item) => acc + (Number(item.quantidade) || 0), 0);
                 const statusElem = document.getElementById('statusCache');
@@ -658,7 +654,14 @@
         if (!codigo) return;
         codigo = codigo.trim();
         const produto = estoqueLocal.find(p => p.codigo === codigo);
+
         if (produto) {
+            // --- TRAVA DE STATUS (LOCAL) ---
+            if (produto.status === "Inativo") {
+                mostrarAviso("ALERTA: Este produto está INATIVO e não pode ser vendido!", "error");
+                if (typeof playErrorBeep === "function") playErrorBeep();
+                return; // Bloqueia a inserção no carrinho
+            }
             adicionarAoCarrinho(produto);
         } else {
             exibirLoader(true, "Buscando...");
@@ -668,13 +671,26 @@
                     body: JSON.stringify({ acao: 'buscarProduto', dados: { codigo: codigo } })
                 });
                 const res = await response.json();
-                if (res.sucesso) adicionarAoCarrinho(res);
-                else mostrarAviso("Produto não encontrado: " + codigo, 'error');
+                
+                if (res.sucesso) {
+                    // --- TRAVA DE STATUS (REMOTO/API) ---
+                    // Garante que mesmo produtos vindos direto do banco respeitem o status
+                    if (res.status === "Inativo" || (res.produto && res.produto.status === "Inativo")) {
+                        mostrarAviso("Produto encontrado, porém está INATIVO.", "error");
+                    } else {
+                        adicionarAoCarrinho(res.produto || res);
+                    }
+                } else {
+                    mostrarAviso("Produto não encontrado: " + codigo, 'error');
+                }
             } catch (e) {
                 mostrarAviso("Erro de conexão ao buscar produto.", 'error');
-            } finally { exibirLoader(false); }
+            } finally { 
+                exibirLoader(false); 
+            }
         }
     }
+    
     function ajustarCamposPagamento() {
         const metodo = document.getElementById('metodoPgto').value;
         const container = document.getElementById('containerDinamico');
