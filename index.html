@@ -537,39 +537,30 @@
                 body: JSON.stringify({ acao: 'carregarEstoque' })
             });
             const res = await response.json();
-            
             if (res.sucesso) {
-                // Mapeamos a lista vinda do back-end para adicionar a inteligência de "quebra"
-                estoqueLocal = res.lista
-                    .filter(item => item.codigo && item.codigo.trim() !== "")
-                    .map(item => {
-                        // Lógica para quebrar o "nomeCombinado" (Ex: "Vestido Cora Azul")
-                        const partes = item.nomeCombinado ? item.nomeCombinado.split(" ") : [];
-                        
-                        return {
-                            ...item, // Mantém tudo o que já vinha (codigo, nome, preco, etc)
-                            // Extrai o Tipo (primeira palavra)
-                            tipo: partes[0] || "Geral", 
-                            // Extrai a Cor (última palavra)
-                            cor: partes.length > 2 ? partes[partes.length - 1] : "Padrão"
-                        };
-                    });
-    
+                // Filtra e mapeia injetando Tipo e Cor através do nomeCombinado
+                estoqueLocal = res.lista.filter(item => item.codigo && item.codigo.trim() !== "").map(item => {
+                    const partes = item.nomeCombinado ? item.nomeCombinado.split(" ") : [];
+                    return {
+                        ...item,
+                        tipo: partes[0] || "Geral",
+                        cor: partes.length > 1 ? partes[partes.length - 1] : "Padrão"
+                    };
+                });
+
                 const totalPecas = estoqueLocal.reduce((acc, item) => acc + (Number(item.quantidade) || 0), 0);
-                document.getElementById('statusCache').innerText =
-                    `Estoque local: ${totalPecas} peças em ${estoqueLocal.length} modelos.`;
-                
-                // IMPORTANTE: Após carregar o estoque, se estivermos na tela de edição, atualizamos os filtros
-                if (document.getElementById('viewEdicao').classList.contains('secao-ativa')) {
-                    inicializarFiltrosEdicao();
+                const statusElem = document.getElementById('statusCache');
+                if (statusElem) {
+                    statusElem.innerText = `Estoque local: ${totalPecas} peças em ${estoqueLocal.length} modelos.`;
                 }
-    
                 mostrarAviso("Estoque atualizado com sucesso!");
             }
         } catch (e) {
             console.error("Erro cache:", e);
             mostrarAviso("Erro ao conectar com a planilha.", "error");
-        } finally { exibirLoader(false); }
+        } finally { 
+            exibirLoader(false); 
+        }
     }
     
     function iniciarScanner() {
