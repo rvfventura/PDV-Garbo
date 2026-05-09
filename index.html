@@ -126,6 +126,17 @@
         #readerInventario video {
             border-radius: 8px;
         }
+
+        #linhasFamiliaEdicao td {
+            vertical-align: middle;
+            white-space: normal; /* Permite que o texto quebre linha */
+            word-wrap: break-word;
+        }
+        
+        #viewEdicao .table th {
+            white-space: nowrap; /* Impede que o cabeçalho quebre linha, mantendo os ícones ↕️ alinhados */
+            user-select: none;   /* Impede seleção de texto ao clicar para ordenar */
+        }
     </style>
 </head>   
 <body>
@@ -1426,7 +1437,6 @@
     let ordemAtual = { campo: '', ascendente: true };
 
     function ordenarFamilia(campo) {
-        // Alterna entre ascendente e descendente
         if (ordemAtual.campo === campo) {
             ordemAtual.ascendente = !ordemAtual.ascendente;
         } else {
@@ -1438,8 +1448,11 @@
             let valA = a[campo] ? a[campo].toString().toUpperCase() : '';
             let valB = b[campo] ? b[campo].toString().toUpperCase() : '';
             
-            // Lógica específica para tamanhos (P, M, G) se necessário, 
-            // ou ordenação alfanumérica simples:
+            // Se for número, compara como número
+            if (campo === 'preco' || campo === 'quantidade') {
+                return ordemAtual.ascendente ? a[campo] - b[campo] : b[campo] - a[campo];
+            }
+    
             return ordemAtual.ascendente 
                 ? valA.localeCompare(valB, undefined, {numeric: true}) 
                 : valB.localeCompare(valA, undefined, {numeric: true});
@@ -1449,8 +1462,11 @@
     }
     
     function renderizarTabelaFamilia(titulo) {
-        document.getElementById('nomeColecaoAtiva').innerText = titulo;
+        const nomeColecaoAtiva = document.getElementById('nomeColecaoAtiva');
+        if (nomeColecaoAtiva) nomeColecaoAtiva.innerText = titulo;
+        
         const corpo = document.getElementById('linhasFamiliaEdicao');
+        if (!corpo) return;
         corpo.innerHTML = "";
     
         familiaAtiva.forEach((item, index) => {
@@ -1458,18 +1474,18 @@
             
             corpo.innerHTML += `
                 <tr>
-                    <td>
-                        <div class="fw-bold text-truncate" style="max-width: 180px;">${item.nomeCombinado}</div>
+                    <td style="min-width: 200px;">
+                        <div class="fw-bold lh-sm">${item.nomeCombinado}</div>
                     </td>
-                    <td><small class="text-muted">${item.codigo}</small></td>
+                    <td><small class="text-secondary">${item.codigo}</small></td>
                     <td><span class="badge bg-light text-dark border">${item.tamanho || "U"}</span></td>
                     <td>
-                        <input type="number" step="0.01" class="form-control form-control-sm" 
-                            id="editPreco_${index}" value="${item.preco}">
+                        <input type="number" step="0.01" class="form-control form-control-sm text-end" 
+                            id="editPreco_${index}" value="${item.preco}" style="width: 100px;">
                     </td>
                     <td>
-                        <input type="number" class="form-control form-control-sm" 
-                            id="editEstoque_${index}" value="${item.quantidade}">
+                        <input type="number" class="form-control form-control-sm text-center" 
+                            id="editEstoque_${index}" value="${item.quantidade}" style="width: 80px;">
                     </td>
                     <td class="text-center">
                         <div class="form-check form-switch d-inline-block">
