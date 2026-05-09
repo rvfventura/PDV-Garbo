@@ -187,7 +187,9 @@
                     <div class="mt-2 small text-muted" id="statusCache">Estoque local: carregando...</div>
                     <!-- Botão Admin reposicionado -->
                     <div class="mt-2">
-                        <button class="btn btn-dark btn-sm shadow-sm" style="font-size: 0.75rem;" onclick="solicitarAcessoAdmin()">
+                        <button type="button" class="btn btn-dark btn-sm shadow-sm" 
+                                style="font-size: 0.75rem;" 
+                                onclick="solicitarAcessoAdmin(event)">
                             ⚙️ Admin
                         </button>
                     </div>
@@ -485,6 +487,7 @@
     let ultimoCodigoLido = "";
     let timestampUltimaLeitura = 0;
     let vendedorLogado = "";
+    
     function mostrarAviso(mensagem, tipo = 'success') {
         const container = document.getElementById('containerAvisos');
         const cor = tipo === 'success' ? 'success' : 'danger';
@@ -961,6 +964,12 @@
     
     window.onload = () => { 
         console.log("Sistema pronto."); 
+    
+        document.getElementById('inputPinAdmin').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                validarPinAdmin();
+            }
+        });
         // Comente as linhas abaixo quando terminar os testes:
         // vendedorLogado = "Teste";
         // document.getElementById('telaAcesso').classList.add('oculto');
@@ -971,12 +980,29 @@
     
     const PIN_MESTRE = "1234"; 
     
-    function solicitarAcessoAdmin() {
-        const pin = prompt("Digite o PIN de administrador:");
-        if (pin === PIN_MESTRE) {
-            document.getElementById('modalMenuAdmin').classList.remove('oculto');
-        } else if (pin !== null) {
+    // 1. Apenas abre o modal e limpa o campo
+    function solicitarAcessoAdmin(e) {
+        if (e) e.preventDefault();
+        document.getElementById('inputPinAdmin').value = ""; // Limpa o campo
+        document.getElementById('modalPinAdmin').classList.remove('oculto');
+        setTimeout(() => document.getElementById('inputPinAdmin').focus(), 300);
+    }
+    
+    // 2. Fecha o modal de PIN
+    function fecharModalPin() {
+        document.getElementById('modalPinAdmin').classList.add('oculto');
+    }
+    
+    // 3. Valida o que foi digitado
+    function validarPinAdmin() {
+        const pinDigitado = document.getElementById('inputPinAdmin').value;
+        
+        if (pinDigitado === PIN_MESTRE) {
+            fecharModalPin(); // Fecha o modal de senha
+            document.getElementById('modalMenuAdmin').classList.remove('oculto'); // Abre o menu admin
+        } else {
             mostrarAviso("PIN Incorreto!", "error");
+            document.getElementById('inputPinAdmin').value = "";
         }
     }
     
@@ -1731,6 +1757,19 @@
         </div>
     </div>
 </div>
-    
+
+<div id="modalPinAdmin" class="modal-overlay oculto">
+    <div class="modal-content shadow-lg border-0">
+        <h5 class="fw-bold mb-3">Acesso Restrito</h5>
+        <p class="small text-muted">Introduza o PIN de Administrador</p>
+        <input type="password" id="inputPinAdmin" class="form-control form-control-lg text-center mb-3" 
+               placeholder="****" inputmode="numeric" maxlength="10">
+        <div class="d-grid gap-2">
+            <button class="btn btn-primary btn-lg" onclick="validarPinAdmin()">ENTRAR</button>
+            <button class="btn btn-light" onclick="fecharModalPin()">CANCELAR</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
