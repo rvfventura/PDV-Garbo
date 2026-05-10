@@ -1627,7 +1627,7 @@
     }
     
     // Coleta as alterações feitas na tela e envia ao back-end
-       async function salvarAlteracoesFamilia() {
+   async function salvarAlteracoesFamilia() {
         if (familiaAtiva.length === 0) return;
     
         // Verificação de Preço Zero
@@ -1684,7 +1684,17 @@
             if (res.sucesso) {
                 mostrarAviso("Planilha atualizada com sucesso!");
                 await carregarEstoqueInicial(); 
+                
+                // --- INCLUSÃO CIRÚRGICA: RESET DOS CAMPOS E INTERFACE ---
+                document.getElementById('filtroTipoEdicao').value = "";
+                document.getElementById('filtroModeloEdicao').value = "";
+                if (document.getElementById('listaEdicaoEstoque')) {
+                    document.getElementById('listaEdicaoEstoque').innerHTML = "";
+                }
                 document.getElementById('painelFamiliaEdicao').classList.add('oculto');
+                familiaAtiva = []; 
+                // -------------------------------------------------------
+
             } else {
                 throw new Error(res.erro);
             }
@@ -1695,7 +1705,6 @@
             exibirLoader(false);
         }
     }
-
     
     let scannerEdicao = null;
 
